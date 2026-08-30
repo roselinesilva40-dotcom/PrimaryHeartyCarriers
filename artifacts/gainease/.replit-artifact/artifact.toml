@@ -1,0 +1,28 @@
+kind = "web"
+previewPath = "/"
+title = "GainEase"
+description = "Une application web responsive de gains avec authentification locale, activités rémunérées, retraits, profil utilisateur et tableau de bord administrateur."
+version = "1.0.0"
+id = "artifacts/gainease"
+router = "path"
+
+[[services]]
+name = "web"
+paths = [ "/" ]
+localPort = 20682
+
+[services.development]
+run = "pnpm --filter @workspace/gainease run dev"
+
+[services.production]
+build = [ "pnpm", "--filter", "@workspace/gainease", "run", "build" ]
+serve = "static"
+publicDir = "artifacts/gainease/dist/public"
+
+[[services.production.rewrites]]
+from = "/*"
+to = "/index.html"
+
+[services.env]
+PORT = "20682"
+BASE_PATH = "/"
