@@ -1,5 +1,8 @@
 import { type FormEvent, type ReactNode, useEffect, useMemo, useState } from 'react';
 import { Link, Route, Router as WouterRouter, Switch, useLocation, useParams } from 'wouter';
+import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
+import { publishableKeyFromHost } from '@clerk/react/internal';
+import { shadcn } from '@clerk/themes';
 import {
   ArrowDownToLine, ArrowRight, BadgeCheck, BarChart3, Bell, Check, CheckCircle2, ChevronRight,
   CircleDollarSign, Clock3, Copy, CreditCard, FileImage, Flame, Gift, History, Home as HomeIcon,
@@ -7,23 +10,132 @@ import {
   UserRound, Users, WalletCards, X, XCircle,
 } from 'lucide-react';
 
-type User = { id: string; name: string; email: string; password: string; isAdmin: boolean; balance: number; videosWatched: number; referrals: number; referralCode: string; createdAt: string };
+const clerkPubKey = publishableKeyFromHost(
+  window.location.hostname,
+  import.meta.env.VITE_CLERK_PUBLISHABLE_KEY,
+);
+const clerkProxyUrl = import.meta.env.VITE_CLERK_PROXY_URL;
+const basePath = import.meta.env.BASE_URL.replace(/\/$/, '');
+const stripBase = (path: string) => basePath && path.startsWith(basePath)
+  ? path.slice(basePath.length) || '/'
+  : path;
+
+if (!clerkPubKey) {
+  throw new Error('Missing VITE_CLERK_PUBLISHABLE_KEY in .env file');
+}
+
+const clerkAppearance = {
+  theme: shadcn,
+  cssLayerName: 'clerk',
+  options: {
+    logoPlacement: 'inside' as const,
+    logoLinkUrl: basePath || '/',
+    logoImageUrl: `${window.location.origin}${basePath}/logo.svg`,
+    socialButtonsPlacement: 'top' as const,
+    socialButtonsVariant: 'blockButton' as const,
+  },
+  variables: {
+    colorPrimary: '#1A2980',
+    colorForeground: '#182653',
+    colorMutedForeground: '#718098',
+    colorDanger: '#bd4545',
+    colorBackground: '#ffffff',
+    colorInput: '#ffffff',
+    colorInputForeground: '#182653',
+    colorNeutral: '#dce4ee',
+    fontFamily: 'Inter, sans-serif',
+    borderRadius: '0.75rem',
+  },
+  elements: {
+    rootBox: 'w-full flex justify-center',
+    cardBox: 'bg-white rounded-2xl w-[440px] max-w-full overflow-hidden shadow-lg',
+    card: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    footer: '!shadow-none !border-0 !bg-transparent !rounded-none',
+    headerTitle: 'text-[#182653] font-extrabold',
+    headerSubtitle: 'text-[#718098]',
+    socialButtonsBlockButtonText: 'text-[#3f4d67] font-bold',
+    formFieldLabel: 'text-[#52617b] font-bold',
+    footerActionLink: 'text-[#1a8f9e] font-bold',
+    footerActionText: 'text-[#718098]',
+    dividerText: 'text-[#718098]',
+    identityPreviewEditButton: 'text-[#1a8f9e]',
+    formFieldSuccessText: 'text-[#168d94]',
+    alertText: 'text-[#bd4545]',
+    logoBox: 'mb-5',
+    logoImage: 'max-h-11',
+    socialButtonsBlockButton: 'border-[#dce4ee] bg-white hover:bg-[#f5f8fb]',
+    formButtonPrimary: 'bg-gradient-to-r from-[#1A2980] to-[#26bfc0] hover:opacity-95',
+    formFieldInput: 'border-[#dce4ee] bg-white text-[#182653]',
+    footerAction: 'bg-transparent',
+    dividerLine: 'bg-[#dce4ee]',
+    alert: 'bg-[#fff0ef] border-[#f0d4d1]',
+    otpCodeFieldInput: 'border-[#dce4ee] text-[#182653]',
+    formFieldRow: 'mb-4',
+    main: 'px-2',
+  },
+};
+
+type User = { id: string; name: string; email: string; password?: string; isAdmin: boolean; balance: number; videosWatched: number; referrals: number; referralCode: string; createdAt: string };
 type Withdrawal = { id: string; userId: string; amount: number; method: 'PayPal' | 'Virement'; status: 'pending' | 'approved' | 'rejected'; createdAt: string; kycImage?: string; voucherImage?: string };
 type ActivityLog = { id: string; type: string; description: string; createdAt: string };
 type Notice = { message: string; kind?: 'success' | 'error' };
 
 const STORAGE = { users: 'gainease-users', withdrawals: 'gainease-withdrawals', logs: 'gainease-logs', session: 'gainease-jwt', failed: 'gainease-failed-login' };
 const defaultUsers: User[] = [{
-  id: 'demo-user', name: 'Camille Martin', email: 'camille@gainease.fr', password: 'gainease2025',
-  isAdmin: false, balance: 72.5, videosWatched: 14, referrals: 2, referralCode: 'GAIN-CAMI7', createdAt: '2025-01-10T08:00:00.000Z',
+  id: 'legacy-demo-user',
+  name: 'Camille Martin',
+  email: 'camille@gainease.fr',
+  password: 'gainease2025',
+  isAdmin: false,
+  balance: 72.5,
+  videosWatched: 14,
+  referrals: 2,
+  referralCode: 'GAIN-CAMI7',
+  createdAt: '2025-01-10T08:00:00.000Z',
 }];
-const liveNames = ['Élodie Bernard', 'Thomas Lefèvre', 'Camille Rousseau', 'Nathalie Moreau', 'Lucas Martin', 'Sophie Dubois', 'Hugo Laurent', 'Manon Girard', 'Antoine Robert', 'Claire Fontaine', 'Julien Mercier', 'Chloé Blanc'];
+const liveNames = ['Jean Dupont', 'Marie Martin', 'Pierre Durand', 'Sophie Lefèvre', 'Thomas Bernard', 'Émilie Petit', 'Nicolas Robert', 'Camille Richard', 'Alexandre Dubois', 'Julie Moreau', 'Antoine Simon', 'Laura Michel', 'David Laurent', 'Claire Martinez', 'Julien Legrand', 'Manon Fontaine', 'Quentin Rousseau', 'Chloé Girard', 'Mathieu Vincent', 'Élise Muller', 'Baptiste Morel', 'Léa Garnier', 'Maxime Chevalier', 'Inès Barbier', 'Adrien Fernandes', 'Lucie Fabre', 'Olivier Gaillard', 'Nina Pons', 'Sébastien Mercier', 'Audrey Brun', 'Romain Rey', 'Anaïs Vidal', 'Jérôme Lopez', 'Zoé Lemoine', 'Hugo Lefebvre', 'Sarah Herve', 'Fabien Perrin', 'Emma Lefort', 'Grégory Morin', 'Océane Martin'];
 const money = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
 const date = (value: string) => new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
 const read = <T,>(key: string, fallback: T): T => { try { const value = localStorage.getItem(key); return value ? JSON.parse(value) as T : fallback; } catch { return fallback; } };
 const write = (key: string, value: unknown) => localStorage.setItem(key, JSON.stringify(value));
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
 const initials = (name: string) => name.split(' ').map((part) => part[0]).join('').slice(0, 2).toUpperCase();
+
+type ClerkProfile = {
+  id: string;
+  fullName?: string | null;
+  firstName?: string | null;
+  emailAddresses?: Array<{ emailAddress: string }>;
+  primaryEmailAddress?: { emailAddress: string } | null;
+};
+
+function ensureLocalUser(profile: ClerkProfile): User {
+  const users = read<User[]>(STORAGE.users, []);
+  const email = profile.primaryEmailAddress?.emailAddress
+    ?? profile.emailAddresses?.[0]?.emailAddress
+    ?? `${profile.id}@gainease.local`;
+  const existing = users.find((entry) => entry.id === profile.id || entry.email.toLowerCase() === email.toLowerCase());
+  if (existing) return existing;
+
+  const name = profile.fullName || profile.firstName || email.split('@')[0];
+  const newUser: User = {
+    id: profile.id,
+    name,
+    email,
+    isAdmin: users.length === 0,
+    balance: 0,
+    videosWatched: 0,
+    referrals: 0,
+    referralCode: `GAIN-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
+    createdAt: new Date().toISOString(),
+  };
+  write(STORAGE.users, [...users, newUser]);
+  write(STORAGE.logs, [
+    ...read<ActivityLog[]>(STORAGE.logs, []),
+    { id: uid('log'), type: 'account', description: `Compte synchronisé pour ${name}`, createdAt: new Date().toISOString() },
+  ]);
+  return newUser;
+}
 
 function celebrate() {
   const w = window as Window & { confetti?: (options: Record<string, unknown>) => void };
@@ -141,9 +253,60 @@ function Register({ onNotice }: { onNotice: (notice: Notice) => void }) {
   </AuthLayout>;
 }
 
+function SignInPage() {
+  return <div className="min-h-[100dvh] bg-[#f7fafc] px-4 py-8 sm:px-6">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-[520px] items-center justify-center">
+      <SignIn routing="path" path={`${basePath}/sign-in`} signUpUrl={`${basePath}/sign-up`} />
+    </div>
+  </div>;
+}
+
+function SignUpPage() {
+  return <div className="min-h-[100dvh] bg-[#f7fafc] px-4 py-8 sm:px-6">
+    <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-[520px] items-center justify-center">
+      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+    </div>
+  </div>;
+}
+
+function PublicHome() {
+  return <div className="app-noise min-h-[100dvh] bg-[#f7fafc] text-[#182653]">
+    <header className="mx-auto flex max-w-6xl items-center justify-between px-5 py-6 sm:px-8">
+      <Logo />
+      <Link href="/sign-in" className="text-sm font-bold text-[#1a8f9e] hover:underline" data-testid="link-landing-login">Se connecter</Link>
+    </header>
+    <main className="mx-auto grid max-w-6xl items-center gap-12 px-5 pb-16 pt-10 sm:px-8 lg:grid-cols-[1.05fr_.95fr] lg:pb-24 lg:pt-20">
+      <div>
+        <p className="mb-4 text-xs font-extrabold uppercase tracking-[.18em] text-[#1a9ba4]">L’espace qui avance avec vous</p>
+        <h1 className="max-w-xl text-5xl font-extrabold leading-[1.02] tracking-[-.06em] text-[#182653] sm:text-6xl">Votre temps mérite mieux qu’un écran de chargement.</h1>
+        <p className="mt-6 max-w-lg text-base leading-7 text-[#718098]">Regardez des vidéos courtes, invitez vos proches et suivez vos gains dans un espace pensé pour rester simple.</p>
+        <div className="mt-8 flex flex-col gap-3 sm:flex-row">
+          <Link href="/sign-up" className="flex h-12 items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1A2980] to-[#26bfc0] px-5 text-sm font-bold text-white shadow-lg shadow-[#1A2980]/15 transition hover:-translate-y-0.5" data-testid="link-landing-signup">Créer mon compte <ArrowRight size={17} /></Link>
+          <Link href="/sign-in" className="flex h-12 items-center justify-center rounded-xl border border-[#dce4ee] bg-white px-5 text-sm font-bold text-[#3f4d67] transition hover:bg-[#f5f8fb]" data-testid="link-landing-signin">J’ai déjà un compte</Link>
+        </div>
+      </div>
+      <div className="relative overflow-hidden rounded-3xl bg-gradient-to-br from-[#1A2980] to-[#26D0CE] p-6 text-white shadow-2xl shadow-[#1A2980]/15 sm:p-8">
+        <div className="absolute -right-20 -top-24 h-72 w-72 rounded-full border-[42px] border-white/10" />
+        <div className="absolute -bottom-28 -left-24 h-80 w-80 rounded-full border-[55px] border-white/10" />
+        <div className="relative">
+          <div className="flex items-center justify-between text-sm font-semibold text-white/70"><span>Solde disponible</span><WalletCards size={20} /></div>
+          <p className="mt-4 text-6xl font-extrabold tracking-[-.07em]">100,00 €</p>
+          <div className="mt-8 flex items-center justify-between text-xs font-semibold text-white/70"><span>Objectif de retrait</span><span>100 / 100 €</span></div>
+          <div className="mt-2 h-2 overflow-hidden rounded-full bg-white/20"><div className="h-full w-full rounded-full bg-white" /></div>
+          <div className="mt-6 grid gap-3 sm:grid-cols-2">
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-4"><p className="text-2xl font-extrabold">5 €</p><p className="mt-1 text-xs text-white/65">par vidéo validée</p></div>
+            <div className="rounded-2xl border border-white/15 bg-white/10 p-4"><p className="text-2xl font-extrabold">10 €</p><p className="mt-1 text-xs text-white/65">par ami invité</p></div>
+          </div>
+        </div>
+      </div>
+    </main>
+  </div>;
+}
+
 function Shell({ children, user, path }: { children: ReactNode; user: User; path: string }) {
   const [, setLocation] = useLocation(); const [mobileOpen, setMobileOpen] = useState(false);
-  const logout = () => { localStorage.removeItem(STORAGE.session); setLocation('/login'); };
+  const { signOut } = useClerk();
+  const logout = () => { void signOut({ redirectUrl: basePath || '/' }); };
   const links = [{ href: '/home', label: 'Accueil', icon: HomeIcon }, { href: '/live', label: 'Retraits en direct', icon: CircleDollarSign }, { href: '/profile', label: 'Profil', icon: UserRound }];
   return <div className="app-noise min-h-[100dvh] bg-[#f6f9fc] text-[#182653]">
     <aside className={`fixed inset-y-0 left-0 z-30 w-[252px] bg-[#182653] px-4 py-6 text-white transition-transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
@@ -218,7 +381,7 @@ function Withdraw({ user, updateUser, onNotice }: { user: User; updateUser: (use
 }
 
 function Profile({ user, onNotice }: { user: User; onNotice: (notice: Notice) => void }) {
-  const [, setLocation] = useLocation(); const logout = () => { localStorage.removeItem(STORAGE.session); setLocation('/login'); };
+  const [, setLocation] = useLocation(); const { signOut } = useClerk(); const logout = () => { void signOut({ redirectUrl: basePath || '/' }); };
   return <Shell user={user} path="/profile"><PageHeading eyebrow="Votre espace" title="Profil et sécurité" description="Vos informations, vos performances et les accès de votre compte." /><div className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]"><section className="rounded-2xl bg-gradient-to-br from-[#1A2980] to-[#26D0CE] p-7 text-white shadow-lg shadow-[#1A2980]/15"><span className="grid h-16 w-16 place-items-center rounded-2xl bg-white/15 text-xl font-extrabold">{initials(user.name)}</span><h2 className="mt-5 text-2xl font-extrabold tracking-[-.04em]">{user.name}</h2><p className="mt-1 text-sm text-white/65">{user.email}</p><span className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide"><BadgeCheck size={13} /> {user.isAdmin ? 'Administrateur' : 'Membre vérifié'}</span><div className="mt-8 border-t border-white/15 pt-5"><p className="text-[10px] font-bold uppercase tracking-wider text-white/55">Membre depuis</p><p className="mt-1 text-sm font-bold">{new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(user.createdAt))}</p></div></section><section className="rounded-2xl border border-[#e4eaf1] bg-white p-6 shadow-sm"><h2 className="font-extrabold">Vos chiffres</h2><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3"><div className="rounded-xl bg-[#f7fafc] p-4"><p className="text-xs text-[#718098]">Solde actuel</p><p className="mt-2 text-xl font-extrabold">{money.format(user.balance)}</p></div><div className="rounded-xl bg-[#f7fafc] p-4"><p className="text-xs text-[#718098]">Vidéos vues</p><p className="mt-2 text-xl font-extrabold">{user.videosWatched}</p></div><div className="rounded-xl bg-[#f7fafc] p-4"><p className="text-xs text-[#718098]">Gains totaux</p><p className="mt-2 text-xl font-extrabold">{money.format(user.videosWatched * 5 + user.referrals * 10)}</p></div></div><div className="mt-6 flex items-center justify-between border-t border-[#edf1f5] pt-5"><div className="flex items-center gap-3"><Gift size={18} className="text-[#c77a1e]" /><div><p className="text-sm font-bold">{user.referrals} parrainages</p><p className="text-xs text-[#94a1b3]">Code {user.referralCode}</p></div></div><button onClick={() => { navigator.clipboard?.writeText(user.referralCode); onNotice({ message: 'Code copié.' }); }} className="rounded-lg p-2 text-[#168d94] hover:bg-[#edf9f7]" aria-label="Copier le code" data-testid="button-profile-copy"><Copy size={16} /></button></div><div className="mt-6 flex flex-wrap gap-3"><button onClick={logout} className="flex items-center gap-2 rounded-xl border border-[#e4eaf1] px-4 py-2.5 text-sm font-bold text-[#718098] hover:bg-[#f7fafc]" data-testid="button-profile-logout"><LogOut size={16} /> Se déconnecter</button>{user.isAdmin && <button onClick={() => setLocation('/admin')} className="flex items-center gap-2 rounded-xl bg-[#182653] px-4 py-2.5 text-sm font-bold text-white" data-testid="button-open-admin"><LayoutDashboard size={16} /> Ouvrir l’administration</button>}</div></section></div></Shell>;
 }
 
@@ -232,21 +395,41 @@ function Admin({ user, onNotice }: { user: User; onNotice: (notice: Notice) => v
 }
 
 function AuthGuard({ children, onNotice }: { children: (user: User) => ReactNode; onNotice: (notice: Notice) => void }) {
-  const [, setLocation] = useLocation(); const session = read<{ sub: string; exp: number } | null>(STORAGE.session, null); const users = read<User[]>(STORAGE.users, defaultUsers); const user = session && session.exp > Date.now() ? users.find((entry) => entry.id === session.sub) : undefined;
-  useEffect(() => { if (!user) { setLocation('/login'); onNotice({ message: 'Connectez-vous pour accéder à cet espace.', kind: 'error' }); } }, [user, setLocation, onNotice]);
+  const [, setLocation] = useLocation();
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
+  const user = isLoaded && isSignedIn && clerkUser ? ensureLocalUser(clerkUser) : undefined;
+  useEffect(() => {
+    if (isLoaded && !isSignedIn) {
+      setLocation('/');
+      onNotice({ message: 'Connectez-vous pour accéder à cet espace.', kind: 'error' });
+    }
+  }, [isLoaded, isSignedIn, setLocation, onNotice]);
   return user ? <>{children(user)}</> : <div className="min-h-[100dvh] bg-[#f6f9fc]" />;
 }
 
 function RedirectHome() {
-  const [, setLocation] = useLocation(); useEffect(() => { const session = read<{ sub: string; exp: number } | null>(STORAGE.session, null); const users = read<User[]>(STORAGE.users, defaultUsers); const user = session && users.find((entry) => entry.id === session.sub); setLocation(user ? (user.isAdmin ? '/admin' : '/home') : '/login'); }, [setLocation]); return <div className="min-h-[100dvh] bg-[#f6f9fc]" />;
+  const [, setLocation] = useLocation();
+  const { isLoaded, isSignedIn } = useAuth();
+  const { user: clerkUser } = useUser();
+  useEffect(() => {
+    if (isLoaded && isSignedIn && clerkUser) {
+      const user = ensureLocalUser(clerkUser);
+      setLocation(user.isAdmin ? '/admin' : '/home');
+    }
+  }, [isLoaded, isSignedIn, clerkUser, setLocation]);
+  if (isLoaded && !isSignedIn) return <PublicHome />;
+  return <div className="grid min-h-[100dvh] place-items-center bg-[#f6f9fc]"><div className="h-8 w-8 animate-spin rounded-full border-4 border-[#dce4ee] border-t-[#1a9ba4]" /></div>;
 }
 
 function AppRouter({ onNotice, bump }: { onNotice: (notice: Notice) => void; bump: () => void }) {
-  const updateUser = (user: User) => { const users = read<User[]>(STORAGE.users, defaultUsers).map((entry) => entry.id === user.id ? user : entry); write(STORAGE.users, users); bump(); };
+  const updateUser = (user: User) => { const users = read<User[]>(STORAGE.users, []).map((entry) => entry.id === user.id ? user : entry); write(STORAGE.users, users); bump(); };
   return <Switch>
     <Route path="/" component={RedirectHome} />
-    <Route path="/login"><Login onNotice={onNotice} /></Route>
-    <Route path="/register"><Register onNotice={onNotice} /></Route>
+    <Route path="/sign-in/*?" component={SignInPage} />
+    <Route path="/sign-up/*?" component={SignUpPage} />
+    <Route path="/login"><SignInPage /></Route>
+    <Route path="/register"><SignUpPage /></Route>
     <Route path="/home"><AuthGuard onNotice={onNotice}>{(user) => <Home user={user} updateUser={updateUser} onNotice={onNotice} />}</AuthGuard></Route>
     <Route path="/live"><AuthGuard onNotice={onNotice}>{(user) => <Live user={user} onNotice={onNotice} />}</AuthGuard></Route>
     <Route path="/withdraw"><AuthGuard onNotice={onNotice}>{(user) => <Withdraw user={user} updateUser={updateUser} onNotice={onNotice} />}</AuthGuard></Route>
@@ -256,10 +439,29 @@ function AppRouter({ onNotice, bump }: { onNotice: (notice: Notice) => void; bum
   </Switch>;
 }
 
+function ClerkApp({ notice, onNotice, onClose, bump }: { notice: Notice | null; onNotice: (next: Notice) => void; onClose: () => void; bump: () => void }) {
+  const [, setLocation] = useLocation();
+  return <ClerkProvider
+    publishableKey={clerkPubKey}
+    proxyUrl={clerkProxyUrl}
+    appearance={clerkAppearance}
+    signInUrl={`${basePath}/sign-in`}
+    signUpUrl={`${basePath}/sign-up`}
+    routerPush={(to) => setLocation(stripBase(to))}
+    routerReplace={(to) => setLocation(stripBase(to), { replace: true })}
+  >
+    <AppRouter onNotice={onNotice} bump={bump} />
+    <Toast notice={notice} onClose={onClose} />
+  </ClerkProvider>;
+}
+
 function App() {
-  const [notice, setNotice] = useState<Notice | null>(null); const [, setVersion] = useState(0);
+  const [notice, setNotice] = useState<Notice | null>(null);
+  const [, setVersion] = useState(0);
   const onNotice = (next: Notice) => { setNotice(next); window.setTimeout(() => setNotice(null), 3600); };
-  return <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, '')}><AppRouter onNotice={onNotice} bump={() => setVersion((value) => value + 1)} /><Toast notice={notice} onClose={() => setNotice(null)} /></WouterRouter>;
+  return <WouterRouter base={basePath}>
+    <ClerkApp notice={notice} onNotice={onNotice} onClose={() => setNotice(null)} bump={() => setVersion((value) => value + 1)} />
+  </WouterRouter>;
 }
 
 export default App;

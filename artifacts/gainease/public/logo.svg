@@ -1,0 +1,13 @@
+<svg width="160" height="44" viewBox="0 0 160 44" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <defs>
+    <linearGradient id="gainEase" x1="3" y1="4" x2="38" y2="39" gradientUnits="userSpaceOnUse">
+      <stop stop-color="#1A2980"/>
+      <stop offset="1" stop-color="#26D0CE"/>
+    </linearGradient>
+  </defs>
+  <rect x="1" y="1" width="42" height="42" rx="13" fill="url(#gainEase)"/>
+  <path d="M12 29L18 23L23 27L32 16" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <path d="M27 16H32V21" stroke="white" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>
+  <text x="53" y="29" fill="#182653" font-family="Inter, Arial, sans-serif" font-size="19" font-weight="800" letter-spacing="-0.8">Gain</text>
+  <text x="101" y="29" fill="#1FAEB5" font-family="Inter, Arial, sans-serif" font-size="19" font-weight="800" letter-spacing="-0.8">Ease</text>
+</svg>
