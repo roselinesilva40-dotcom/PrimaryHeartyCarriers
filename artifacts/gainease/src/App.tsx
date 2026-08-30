@@ -97,6 +97,7 @@ const defaultUsers: User[] = [{
 const liveNames = ['Jean Dupont', 'Marie Martin', 'Pierre Durand', 'Sophie Lefèvre', 'Thomas Bernard', 'Émilie Petit', 'Nicolas Robert', 'Camille Richard', 'Alexandre Dubois', 'Julie Moreau', 'Antoine Simon', 'Laura Michel', 'David Laurent', 'Claire Martinez', 'Julien Legrand', 'Manon Fontaine', 'Quentin Rousseau', 'Chloé Girard', 'Mathieu Vincent', 'Élise Muller', 'Baptiste Morel', 'Léa Garnier', 'Maxime Chevalier', 'Inès Barbier', 'Adrien Fernandes', 'Lucie Fabre', 'Olivier Gaillard', 'Nina Pons', 'Sébastien Mercier', 'Audrey Brun', 'Romain Rey', 'Anaïs Vidal', 'Jérôme Lopez', 'Zoé Lemoine', 'Hugo Lefebvre', 'Sarah Herve', 'Fabien Perrin', 'Emma Lefort', 'Grégory Morin', 'Océane Martin'];
 const money = new Intl.NumberFormat('fr-FR', { style: 'currency', currency: 'EUR' });
 const date = (value: string) => new Intl.DateTimeFormat('fr-FR', { day: '2-digit', month: 'short', hour: '2-digit', minute: '2-digit' }).format(new Date(value));
+const ADMIN_EMAIL = 'senogi2445@slotbeer.com';
 const read = <T,>(key: string, fallback: T): T => { try { const value = localStorage.getItem(key); return value ? JSON.parse(value) as T : fallback; } catch { return fallback; } };
 const write = (key: string, value: unknown) => localStorage.setItem(key, JSON.stringify(value));
 const uid = (prefix: string) => `${prefix}-${Date.now()}-${Math.random().toString(36).slice(2, 7)}`;
@@ -116,14 +117,21 @@ function ensureLocalUser(profile: ClerkProfile): User {
     ?? profile.emailAddresses?.[0]?.emailAddress
     ?? `${profile.id}@gainease.local`;
   const existing = users.find((entry) => entry.id === profile.id || entry.email.toLowerCase() === email.toLowerCase());
-  if (existing) return existing;
+  if (existing) {
+    if (!existing.isAdmin && email.toLowerCase() === ADMIN_EMAIL) {
+      const promoted = { ...existing, isAdmin: true };
+      write(STORAGE.users, users.map((entry) => entry.id === existing.id ? promoted : entry));
+      return promoted;
+    }
+    return existing;
+  }
 
   const name = profile.fullName || profile.firstName || email.split('@')[0];
   const newUser: User = {
     id: profile.id,
     name,
     email,
-    isAdmin: users.length === 0,
+    isAdmin: users.length === 0 || email.toLowerCase() === ADMIN_EMAIL,
     balance: 0,
     videosWatched: 0,
     referrals: 0,
