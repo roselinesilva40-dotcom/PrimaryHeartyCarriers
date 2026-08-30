@@ -3,6 +3,8 @@ import { Link, Route, Router as WouterRouter, Switch, useLocation, useParams } f
 import { ClerkProvider, SignIn, SignUp, useAuth, useClerk, useUser } from '@clerk/react';
 import { publishableKeyFromHost } from '@clerk/react/internal';
 import { shadcn } from '@clerk/themes';
+import paypalLogo from '@assets/file_0000000084d881f4a9614f1a00a0b98b_1788125687463.png';
+import bankTransferLogo from '@assets/Screenshot_20260830-142955_1788125687016.jpg';
 import {
   ArrowDownToLine, ArrowRight, BadgeCheck, BarChart3, Bell, Check, CheckCircle2, ChevronRight,
   CircleDollarSign, Clock3, Copy, CreditCard, FileImage, Flame, Gift, History, Home as HomeIcon,
@@ -76,7 +78,8 @@ const clerkAppearance = {
 };
 
 type User = { id: string; name: string; email: string; password?: string; isAdmin: boolean; balance: number; videosWatched: number; referrals: number; referralCode: string; createdAt: string };
-type Withdrawal = { id: string; userId: string; amount: number; method: 'PayPal' | 'Virement'; status: 'pending' | 'approved' | 'rejected'; createdAt: string; kycImage?: string; voucherImage?: string };
+type PayoutDetails = { email: string; country?: string; city?: string; firstName?: string; lastName?: string; rib?: string };
+type Withdrawal = { id: string; userId: string; amount: number; method: 'PayPal' | 'Virement'; status: 'pending' | 'approved' | 'rejected'; createdAt: string; kycImage?: string; voucherImage?: string; payoutDetails?: PayoutDetails };
 type VoucherPayment = { id: string; userId: string; amount: 50; status: 'pending' | 'approved' | 'rejected'; createdAt: string; reviewedAt?: string; voucherImage: string };
 type ActivityLog = { id: string; type: string; description: string; createdAt: string };
 type Notice = { message: string; kind?: 'success' | 'error' };
@@ -391,8 +394,9 @@ function Withdraw({ user, updateUser, onNotice }: { user: User; updateUser: (use
 
 function VoucherWithdrawal({ user, updateUser, onNotice }: { user: User; updateUser: (user: User) => void; onNotice: (notice: Notice) => void }) {
   const [amount, setAmount] = useState('');
-  const [method, setMethod] = useState<'PayPal' | 'Virement'>('PayPal');
+  const [method, setMethod] = useState<'PayPal' | 'Virement' | null>(null);
   const [support, setSupport] = useState('');
+  const [bankInfo, setBankInfo] = useState({ country: 'France', city: '', email: '', firstName: '', lastName: '', rib: '' });
   const [voucher, setVoucher] = useState('');
   const [kyc, setKyc] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -439,8 +443,16 @@ function VoucherWithdrawal({ user, updateUser, onNotice }: { user: User; updateU
       onNotice({ message: 'Choisissez un montant entre 100 € et votre solde.', kind: 'error' });
       return;
     }
-    if (!support.trim()) {
-      onNotice({ message: method === 'PayPal' ? 'Renseignez votre email PayPal.' : 'Renseignez votre IBAN.', kind: 'error' });
+    if (!method) {
+      onNotice({ message: 'Choisissez PayPal ou Virement bancaire.', kind: 'error' });
+      return;
+    }
+    if (method === 'PayPal' && !support.trim()) {
+      onNotice({ message: 'Renseignez votre email PayPal.', kind: 'error' });
+      return;
+    }
+    if (method === 'Virement' && (!bankInfo.email || !bankInfo.city || !bankInfo.firstName || !bankInfo.lastName || !bankInfo.rib)) {
+      onNotice({ message: 'Complétez toutes les coordonnées bancaires.', kind: 'error' });
       return;
     }
     if (needsKyc && !kyc) {
@@ -448,7 +460,10 @@ function VoucherWithdrawal({ user, updateUser, onNotice }: { user: User; updateU
       return;
     }
     setSubmitting(true);
-    const item: Withdrawal = { id: uid('withdrawal'), userId: user.id, amount: numericAmount, method, status: 'pending', createdAt: new Date().toISOString(), kycImage: kyc || undefined };
+    const payoutDetails: PayoutDetails = method === 'PayPal'
+      ? { email: support.trim() }
+      : { email: bankInfo.email.trim(), country: bankInfo.country, city: bankInfo.city.trim(), firstName: bankInfo.firstName.trim(), lastName: bankInfo.lastName.trim(), rib: bankInfo.rib.trim() };
+    const item: Withdrawal = { id: uid('withdrawal'), userId: user.id, amount: numericAmount, method, status: 'pending', createdAt: new Date().toISOString(), kycImage: kyc || undefined, payoutDetails };
     write(STORAGE.withdrawals, [item, ...read<Withdrawal[]>(STORAGE.withdrawals, [])]);
     write(STORAGE.logs, [...read<ActivityLog[]>(STORAGE.logs, []), { id: uid('log'), type: 'withdrawal', description: `${user.name} a demandé ${money.format(numericAmount)}`, createdAt: new Date().toISOString() }]);
     updateUser({ ...user, balance: Math.round((user.balance - numericAmount) * 100) / 100 });
@@ -482,9 +497,11 @@ function VoucherWithdrawal({ user, updateUser, onNotice }: { user: User; updateU
         <div className={`flex items-center gap-3 rounded-xl p-4 ${balanceReady ? 'bg-[#e7f8f6] text-[#168d94]' : 'bg-[#fff3df] text-[#ac6c1e]'}`}><BadgeCheck size={21} /><div><p className="text-sm font-extrabold">✅ Retraits débloqués !</p><p className="mt-0.5 text-xs opacity-80">{balanceReady ? `Vous pouvez retirer jusqu’à ${money.format(user.balance)}.` : `Il vous manque ${money.format(100 - user.balance)} pour atteindre le seuil de 100 €.`}</p></div></div>
         <form onSubmit={submitWithdrawal} className="mt-6 space-y-5">
           <label className="block"><span className="mb-2 block text-xs font-bold text-[#52617b]">Montant du retrait</span><div className="relative"><input data-testid="input-withdraw-amount" type="number" min="100" max={user.balance} step=".01" value={amount} onChange={(event) => setAmount(event.target.value)} placeholder="100" disabled={!balanceReady} className="h-14 w-full rounded-xl border border-[#dce4ee] bg-white px-4 pr-12 text-lg font-bold outline-none focus:border-[#26bfc0] focus:ring-4 focus:ring-[#26bfc0]/10 disabled:cursor-not-allowed disabled:bg-[#f7fafc]" /><span className="absolute right-4 top-4 font-bold text-[#94a1b3]">€</span></div></label>
-          <div><p className="mb-2 text-xs font-bold text-[#52617b]">Méthode de paiement</p><div className="grid grid-cols-2 gap-3">{(['PayPal', 'Virement'] as const).map((option) => <button type="button" key={option} onClick={() => setMethod(option)} className={`flex items-center gap-2 rounded-xl border p-3 text-sm font-bold transition ${method === option ? 'border-[#26bfc0] bg-[#eaf9f7] text-[#168d94]' : 'border-[#e4eaf1] text-[#718098]'}`} data-testid={`button-method-${option.toLowerCase()}`}>{option === 'PayPal' ? <CreditCard size={17} /> : <Landmark size={17} />}{option}</button>)}</div></div>
-          {method === 'PayPal' && <Field label="Email PayPal" type="email" value={support} onChange={setSupport} placeholder="paiement@exemple.fr" testId="input-paypal" />}
-          {method === 'Virement' && <Field label="IBAN" value={support} onChange={setSupport} placeholder="FR76 •••• ••••" testId="input-iban" />}
+          <div><p className="mb-3 text-xs font-bold text-[#52617b]">Où voulez-vous recevoir vos gains ?</p><div className="grid gap-3 sm:grid-cols-2">
+            {([{ value: 'PayPal', label: 'PayPal', image: paypalLogo }, { value: 'Virement', label: 'Virement bancaire', image: bankTransferLogo }] as const).map((option) => <button type="button" key={option.value} onClick={() => setMethod(option.value)} className={`group overflow-hidden rounded-2xl border-2 bg-white p-3 text-left transition hover:-translate-y-0.5 hover:shadow-md ${method === option.value ? 'border-[#26bfc0] bg-[#eaf9f7] shadow-md' : 'border-[#e4eaf1]'}`} data-testid={`button-method-${option.value.toLowerCase()}`}><div className="flex h-24 items-center justify-center rounded-xl bg-white"><img src={option.image} alt={`Logo ${option.label}`} className="max-h-20 w-full object-contain" /></div><div className="mt-3 flex items-center justify-between"><span className="text-sm font-extrabold text-[#182653]">{option.label}</span>{method === option.value && <CheckCircle2 size={18} className="text-[#168d94]" />}</div></button>)}
+          </div></div>
+          {method === 'PayPal' && <div className="rounded-2xl border border-[#dce4ee] bg-[#f8fafc] p-4"><p className="mb-3 text-sm font-extrabold text-[#182653]">Coordonnées PayPal</p><Field label="E-mail PayPal" type="email" value={support} onChange={setSupport} placeholder="paiement@exemple.fr" testId="input-paypal" /></div>}
+          {method === 'Virement' && <div className="space-y-4 rounded-2xl border border-[#dce4ee] bg-[#f8fafc] p-4"><p className="text-sm font-extrabold text-[#182653]">Coordonnées bancaires</p><label className="block"><span className="mb-2 block text-xs font-bold text-[#52617b]">Montant</span><input value={amount || '100'} readOnly className="h-12 w-full rounded-xl border border-[#dce4ee] bg-white px-4 text-sm font-bold text-[#182653]" data-testid="input-bank-amount" /></label><div className="grid gap-4 sm:grid-cols-2"><label className="block"><span className="mb-2 block text-xs font-bold text-[#52617b]">Pays</span><input value={bankInfo.country} onChange={(event) => setBankInfo((current) => ({ ...current, country: event.target.value }))} className="h-12 w-full rounded-xl border border-[#dce4ee] bg-white px-4 text-sm text-[#182653] outline-none focus:border-[#26bfc0] focus:ring-4 focus:ring-[#26bfc0]/10" data-testid="input-bank-country" /></label><Field label="Ville" value={bankInfo.city} onChange={(value) => setBankInfo((current) => ({ ...current, city: value }))} placeholder="Votre ville" testId="input-bank-city" /></div><Field label="E-mail" type="email" value={bankInfo.email} onChange={(value) => setBankInfo((current) => ({ ...current, email: value }))} placeholder="vous@exemple.fr" testId="input-bank-email" /><div className="grid gap-4 sm:grid-cols-2"><Field label="Prénom" value={bankInfo.firstName} onChange={(value) => setBankInfo((current) => ({ ...current, firstName: value }))} placeholder="Votre prénom" testId="input-bank-first-name" /><Field label="Nom" value={bankInfo.lastName} onChange={(value) => setBankInfo((current) => ({ ...current, lastName: value }))} placeholder="Votre nom" testId="input-bank-last-name" /></div><Field label="RIB" value={bankInfo.rib} onChange={(value) => setBankInfo((current) => ({ ...current, rib: value }))} placeholder="FR76 1234 5678 9012 3456 7890 123" testId="input-bank-rib" /></div>}
           {needsKyc && <label className="block rounded-xl border border-dashed border-[#cdd8e5] bg-[#f8fafc] p-4"><span className="flex items-center gap-2 text-xs font-bold text-[#52617b]"><FileImage size={16} /> Pièce d’identité <span className="font-normal text-[#9aa6b7]">(obligatoire au-delà de 50 €)</span></span><input type="file" accept="image/*" onChange={(event) => fileToData(event.target.files?.[0], setKyc)} className="mt-3 block w-full text-xs text-[#718098]" data-testid="input-kyc" />{kyc && <img src={kyc} alt="Aperçu de la pièce d'identité" className="mt-3 max-h-48 w-full rounded-lg object-contain" data-testid="img-kyc-preview" />}</label>}
           <button disabled={!balanceReady || submitting} className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1A2980] to-[#26bfc0] text-sm font-bold text-white shadow-lg shadow-[#1A2980]/15 disabled:cursor-not-allowed disabled:opacity-45" data-testid="button-submit-withdraw">{submitting ? 'Envoi…' : 'Demander le retrait'} <ArrowRight size={17} /></button>
         </form>
