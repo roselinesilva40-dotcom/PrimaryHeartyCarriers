@@ -77,7 +77,7 @@ const clerkAppearance = {
   },
 };
 
-type User = { id: string; name: string; email: string; password?: string; isAdmin: boolean; balance: number; videosWatched: number; referrals: number; referralCode: string; createdAt: string };
+type User = { id: string; name: string; email: string; password?: string; isAdmin: boolean; balance: number; videosWatched: number; referrals: number; referralCode: string; referredBy?: string; createdAt: string };
 type PayoutDetails = { email: string; country?: string; city?: string; firstName?: string; lastName?: string; rib?: string };
 type Withdrawal = { id: string; userId: string; amount: number; method: 'PayPal' | 'Virement'; status: 'pending' | 'approved' | 'rejected'; createdAt: string; kycImage?: string; voucherImage?: string; payoutDetails?: PayoutDetails };
 type VoucherPayment = { id: string; userId: string; amount: 50; status: 'pending' | 'approved' | 'rejected'; createdAt: string; reviewedAt?: string; voucherImage: string };
@@ -87,6 +87,7 @@ type ActivityLog = { id: string; type: string; description: string; createdAt: s
 type Notice = { message: string; kind?: 'success' | 'error' };
 
 const STORAGE = { users: 'gainease-users', withdrawals: 'gainease-withdrawals', vouchers: 'gainease-voucher-payments', support: 'gainease-support-messages', logs: 'gainease-logs', session: 'gainease-jwt', failed: 'gainease-failed-login' };
+const PENDING_REFERRAL_KEY = 'gainease-pending-referral-code';
 const defaultUsers: User[] = [{
   id: 'legacy-demo-user',
   name: 'Camille Martin',
@@ -123,6 +124,7 @@ function ensureLocalUser(profile: ClerkProfile): User {
     ?? `${profile.id}@gainease.local`;
   const existing = users.find((entry) => entry.id === profile.id || entry.email.toLowerCase() === email.toLowerCase());
   if (existing) {
+    localStorage.removeItem(PENDING_REFERRAL_KEY);
     if (!existing.isAdmin && email.toLowerCase() === ADMIN_EMAIL) {
       const promoted = { ...existing, isAdmin: true };
       write(STORAGE.users, users.map((entry) => entry.id === existing.id ? promoted : entry));
@@ -132,6 +134,9 @@ function ensureLocalUser(profile: ClerkProfile): User {
   }
 
   const name = profile.fullName || profile.firstName || email.split('@')[0];
+  const pendingReferralCode = localStorage.getItem(PENDING_REFERRAL_KEY)?.trim().toUpperCase() || '';
+  const referrer = pendingReferralCode ? users.find((entry) => entry.referralCode.toUpperCase() === pendingReferralCode && entry.id !== profile.id) : undefined;
+  const now = new Date().toISOString();
   const newUser: User = {
     id: profile.id,
     name,
@@ -141,12 +146,18 @@ function ensureLocalUser(profile: ClerkProfile): User {
     videosWatched: 0,
     referrals: 0,
     referralCode: `GAIN-${Math.random().toString(36).slice(2, 7).toUpperCase()}`,
-    createdAt: new Date().toISOString(),
+    referredBy: referrer?.id,
+    createdAt: now,
   };
-  write(STORAGE.users, [...users, newUser]);
+  const updatedUsers = referrer
+    ? users.map((entry) => entry.id === referrer.id ? { ...entry, balance: Math.round((entry.balance + 10) * 100) / 100, referrals: entry.referrals + 1 } : entry)
+    : users;
+  write(STORAGE.users, [...updatedUsers, newUser]);
+  localStorage.removeItem(PENDING_REFERRAL_KEY);
   write(STORAGE.logs, [
     ...read<ActivityLog[]>(STORAGE.logs, []),
     { id: uid('log'), type: 'account', description: `Compte synchronisé pour ${name}`, createdAt: new Date().toISOString() },
+    ...(referrer ? [{ id: uid('log'), type: 'referral', description: `${referrer.name} a gagné 10 € grâce au parrainage de ${name}`, createdAt: now }] : []),
   ]);
   return newUser;
 }
@@ -276,9 +287,22 @@ function SignInPage() {
 }
 
 function SignUpPage() {
+  const [referralCode, setReferralCode] = useState(() => localStorage.getItem(PENDING_REFERRAL_KEY) || '');
+  const updateReferralCode = (value: string) => {
+    const normalized = value.toUpperCase();
+    setReferralCode(normalized);
+    if (normalized.trim()) localStorage.setItem(PENDING_REFERRAL_KEY, normalized.trim());
+    else localStorage.removeItem(PENDING_REFERRAL_KEY);
+  };
   return <div className="min-h-[100dvh] bg-[#f7fafc] px-4 py-8 sm:px-6">
     <div className="mx-auto flex min-h-[calc(100dvh-4rem)] max-w-[520px] items-center justify-center">
-      <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+      <div className="w-full">
+        <div className="mb-4 rounded-2xl border border-[#dce4ee] bg-white p-4 shadow-sm">
+          <label className="block"><span className="mb-2 block text-xs font-bold text-[#52617b]">Code de parrainage <span className="font-normal text-[#94a1b3]">(facultatif)</span></span><input value={referralCode} onChange={(event) => updateReferralCode(event.target.value)} placeholder="Ex. GAIN-CAMI7" className="h-12 w-full rounded-xl border border-[#dce4ee] bg-white px-4 font-mono text-sm uppercase tracking-wide text-[#182653] outline-none transition placeholder:font-sans placeholder:normal-case placeholder:tracking-normal placeholder:text-[#a4afbf] focus:border-[#26bfc0] focus:ring-4 focus:ring-[#26bfc0]/10" data-testid="input-signup-referral-code" /></label>
+          <p className="mt-2 text-xs leading-5 text-[#718098]">Le parrain reçoit 10 € lorsque votre inscription est terminée.</p>
+        </div>
+        <SignUp routing="path" path={`${basePath}/sign-up`} signInUrl={`${basePath}/sign-in`} />
+      </div>
     </div>
   </div>;
 }
