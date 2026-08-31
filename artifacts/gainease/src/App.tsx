@@ -81,7 +81,8 @@ type User = { id: string; name: string; email: string; password?: string; isAdmi
 type PayoutDetails = { email: string; country?: string; city?: string; firstName?: string; lastName?: string; rib?: string };
 type Withdrawal = { id: string; userId: string; amount: number; method: 'PayPal' | 'Virement'; status: 'pending' | 'approved' | 'rejected'; createdAt: string; kycImage?: string; voucherImage?: string; payoutDetails?: PayoutDetails };
 type VoucherPayment = { id: string; userId: string; amount: 50; status: 'pending' | 'approved' | 'rejected'; createdAt: string; reviewedAt?: string; voucherImage: string };
-type SupportMessage = { id: string; userId: string; userName: string; userEmail: string; subject: string; message: string; status: 'open' | 'answered'; adminReply?: string; createdAt: string; repliedAt?: string };
+type SupportReply = { id: string; author: 'user' | 'admin'; text: string; createdAt: string };
+type SupportMessage = { id: string; userId: string; userName: string; userEmail: string; subject: string; message: string; status: 'open' | 'answered'; adminReply?: string; replies?: SupportReply[]; createdAt: string; repliedAt?: string };
 type ActivityLog = { id: string; type: string; description: string; createdAt: string };
 type Notice = { message: string; kind?: 'success' | 'error' };
 
@@ -343,8 +344,8 @@ function Shell({ children, user, path }: { children: ReactNode; user: User; path
       </header>
       <main className="mx-auto max-w-[1240px] px-5 pb-28 pt-7 md:px-10 md:pb-10 md:pt-10">{children}</main>
     </div>
-    <nav className="fixed bottom-0 left-0 right-0 z-20 grid h-[70px] grid-cols-3 border-t border-[#e4eaf1] bg-white/95 px-2 backdrop-blur md:hidden">
-      {links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={`flex flex-col items-center justify-center gap-1 text-[10px] font-bold ${path === href ? 'text-[#1a8f9e]' : 'text-[#94a1b3]'}`} data-testid={`link-bottom-${label.toLowerCase().replaceAll(' ', '-')}`}><Icon size={20} strokeWidth={path === href ? 2.5 : 1.8} />{label}</Link>)}
+    <nav className="fixed bottom-0 left-0 right-0 z-20 grid h-[70px] grid-cols-4 border-t border-[#e4eaf1] bg-white/95 px-1 backdrop-blur md:hidden">
+      {links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} className={`flex h-full min-w-0 w-full flex-col items-center justify-center gap-1 text-center text-[10px] font-bold ${path === href ? 'text-[#1a8f9e]' : 'text-[#94a1b3]'}`} data-testid={`link-bottom-${label.toLowerCase().replaceAll(' ', '-')}`}><Icon size={20} strokeWidth={path === href ? 2.5 : 1.8} />{label}</Link>)}
     </nav>
   </div>;
 }
@@ -514,7 +515,7 @@ function VoucherWithdrawal({ user, updateUser, onNotice }: { user: User; updateU
   </Shell>;
 }
 
-function SupportPage({ user, onNotice }: { user: User; onNotice: (notice: Notice) => void }) {
+function LegacySupportPage({ user, onNotice }: { user: User; onNotice: (notice: Notice) => void }) {
   const [subject, setSubject] = useState('');
   const [message, setMessage] = useState('');
   const [, refresh] = useState(0);
@@ -551,7 +552,7 @@ function SupportPage({ user, onNotice }: { user: User; onNotice: (notice: Notice
   </Shell>;
 }
 
-function AdminSupport({ user, onNotice }: { user: User; onNotice: (notice: Notice) => void }) {
+function LegacyAdminSupport({ user, onNotice }: { user: User; onNotice: (notice: Notice) => void }) {
   const [, setLocation] = useLocation();
   const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
   const [, refresh] = useState(0);
@@ -578,6 +579,81 @@ function AdminSupport({ user, onNotice }: { user: User; onNotice: (notice: Notic
     <PageHeading eyebrow="Relation membres" title="Messages du support" description="Répondez aux préoccupations des utilisateurs depuis cet espace." action={<button onClick={() => refresh((value) => value + 1)} className="flex h-11 items-center gap-2 rounded-xl border border-[#dce4ee] bg-white px-4 text-sm font-bold text-[#52617b]" data-testid="button-refresh-support"><RefreshCw size={16} /> Actualiser</button>} />
     <div className="mb-5 grid gap-4 sm:grid-cols-3"><div className="rounded-2xl bg-[#182653] p-5 text-white"><MessageCircle size={18} className="text-[#26D0CE]" /><p className="mt-5 text-xs text-white/55">Toutes les demandes</p><p className="mt-1 text-3xl font-extrabold">{messages.length}</p></div><div className="rounded-2xl border border-[#e4eaf1] bg-white p-5"><Clock3 size={18} className="text-[#c77a1e]" /><p className="mt-5 text-xs text-[#94a1b3]">À traiter</p><p className="mt-1 text-3xl font-extrabold">{openCount}</p></div><div className="rounded-2xl border border-[#e4eaf1] bg-white p-5"><CheckCircle2 size={18} className="text-[#2b9a78]" /><p className="mt-5 text-xs text-[#94a1b3]">Répondues</p><p className="mt-1 text-3xl font-extrabold">{messages.length - openCount}</p></div></div>
     <section className="rounded-2xl border border-[#e4eaf1] bg-white p-5 shadow-sm">{messages.length === 0 ? <div className="py-16 text-center"><MessageCircle className="mx-auto text-[#c6d0dc]" size={32} /><p className="mt-3 text-sm font-bold">Aucun message reçu</p><p className="mt-1 text-xs text-[#94a1b3]">Les préoccupations des utilisateurs apparaîtront ici.</p></div> : <div className="space-y-4">{messages.map((item) => <article key={item.id} className="rounded-xl border border-[#edf1f5] p-5"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><div className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e9edff] text-xs font-extrabold text-[#334ba0]">{initials(item.userName)}</span><div><p className="text-sm font-extrabold">{item.userName}</p><p className="text-[10px] text-[#94a1b3]">{item.userEmail} · {date(item.createdAt)}</p></div></div><h2 className="mt-4 text-base font-extrabold text-[#182653]">{item.subject}</h2></div><span className={`self-start rounded-full px-2.5 py-1 text-[10px] font-extrabold ${item.status === 'answered' ? 'bg-[#e7f8f6] text-[#168d94]' : 'bg-[#fff3df] text-[#ac6c1e]'}`}>{item.status === 'answered' ? 'Répondu' : 'À traiter'}</span></div><p className="mt-4 whitespace-pre-wrap rounded-xl bg-[#f8fafc] p-4 text-sm leading-6 text-[#52617b]">{item.message}</p>{item.adminReply ? <div className="mt-4 rounded-xl border-l-4 border-[#2b9a78] bg-[#edf9f7] p-4"><p className="text-[10px] font-extrabold uppercase tracking-wider text-[#168d94]">Votre réponse</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#52617b]">{item.adminReply}</p></div> : <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end"><label className="block flex-1"><span className="mb-2 block text-xs font-bold text-[#52617b]">Répondre</span><textarea value={replyDrafts[item.id] || ''} onChange={(event) => setReplyDrafts((current) => ({ ...current, [item.id]: event.target.value }))} rows={3} placeholder="Écrivez votre réponse..." className="w-full resize-y rounded-xl border border-[#dce4ee] px-4 py-3 text-sm text-[#182653] outline-none focus:border-[#26bfc0] focus:ring-4 focus:ring-[#26bfc0]/10" data-testid={`textarea-support-reply-${item.id}`} /></label><button onClick={() => reply(item.id)} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#182653] px-4 text-sm font-bold text-white" data-testid={`button-support-reply-${item.id}`}><MessageCircle size={16} /> Répondre</button></div>}</article>)}</div>}</section>
+  </Shell>;
+}
+
+function SupportPage({ user, onNotice }: { user: User; onNotice: (notice: Notice) => void }) {
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [, refresh] = useState(0);
+  useEffect(() => { const timer = window.setInterval(() => refresh((value) => value + 1), 2000); return () => window.clearInterval(timer); }, []);
+  const messages = read<SupportMessage[]>(STORAGE.support, []).filter((item) => item.userId === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!message.trim()) {
+      onNotice({ message: 'Écrivez votre préoccupation avant d’envoyer le message.', kind: 'error' });
+      return;
+    }
+    const item: SupportMessage = { id: uid('support'), userId: user.id, userName: user.name, userEmail: user.email, subject: subject.trim() || 'Question générale', message: message.trim(), status: 'open', createdAt: new Date().toISOString(), replies: [] };
+    write(STORAGE.support, [item, ...read<SupportMessage[]>(STORAGE.support, [])]);
+    write(STORAGE.logs, [...read<ActivityLog[]>(STORAGE.logs, []), { id: uid('log'), type: 'support', description: `${user.name} a envoyé une demande au support`, createdAt: new Date().toISOString() }]);
+    setSubject('');
+    setMessage('');
+    onNotice({ message: 'Votre message a été envoyé à l’administration.' });
+  };
+
+  const sendReply = (id: string) => {
+    const text = replyDrafts[id]?.trim();
+    if (!text) {
+      onNotice({ message: 'Écrivez votre message avant de l’envoyer.', kind: 'error' });
+      return;
+    }
+    const allMessages = read<SupportMessage[]>(STORAGE.support, []);
+    const updated = allMessages.map((item) => item.id === id ? { ...item, status: 'open' as const, replies: [...(item.replies || []), { id: uid('reply'), author: 'user' as const, text, createdAt: new Date().toISOString() }] } : item);
+    write(STORAGE.support, updated);
+    setReplyDrafts((current) => ({ ...current, [id]: '' }));
+    refresh((value) => value + 1);
+    onNotice({ message: 'Votre message a été envoyé au support.' });
+  };
+
+  return <Shell user={user} path="/support">
+    <PageHeading eyebrow="Une question ?" title="Contacter le support" description="Écrivez votre préoccupation. Vous pourrez ensuite discuter directement avec l’administration." />
+    <div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]">
+      <section className="rounded-2xl border border-[#e4eaf1] bg-white p-6 shadow-sm"><div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-[#eaf9f7] text-[#168d94]"><MessageCircle size={20} /></div><div><h2 className="font-extrabold">Nouvelle conversation</h2><p className="text-xs text-[#718098]">Votre message sera reçu dans l’espace admin.</p></div></div><form onSubmit={submit} className="mt-6 space-y-4"><Field label="Sujet" value={subject} onChange={setSubject} placeholder="Ex. Question sur mon retrait" required={false} testId="input-support-subject" /><label className="block"><span className="mb-2 block text-xs font-bold text-[#52617b]">Votre message</span><textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={6} placeholder="Écrivez votre préoccupation ici..." required className="w-full resize-y rounded-xl border border-[#dce4ee] bg-white px-4 py-3 text-sm text-[#182653] outline-none transition placeholder:text-[#a4afbf] focus:border-[#26bfc0] focus:ring-4 focus:ring-[#26bfc0]/10" data-testid="textarea-support-message" /></label><button type="submit" className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1A2980] to-[#26bfc0] text-sm font-bold text-white shadow-lg shadow-[#1A2980]/15 transition hover:-translate-y-0.5" data-testid="button-send-support"><MessageCircle size={17} /> Envoyer au support</button></form></section>
+      <section className="rounded-2xl border border-[#e4eaf1] bg-white p-6 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-extrabold">Mes conversations</h2><p className="mt-1 text-xs text-[#94a1b3]">Discutez avec l’administration dans chaque conversation.</p></div><span className="rounded-full bg-[#edf2f7] px-2.5 py-1 text-[10px] font-extrabold text-[#718098]">{messages.length}</span></div>{messages.length === 0 ? <div className="py-14 text-center"><MessageCircle className="mx-auto text-[#c6d0dc]" size={30} /><p className="mt-3 text-sm font-bold">Aucune conversation</p><p className="mt-1 text-xs text-[#94a1b3]">Votre première demande apparaîtra ici.</p></div> : <div className="mt-5 space-y-4">{messages.map((item) => <article key={item.id} className="rounded-xl border border-[#edf1f5] p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-extrabold text-[#182653]">{item.subject}</p><p className="mt-1 text-[10px] text-[#94a1b3]">{date(item.createdAt)}</p></div><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold ${item.status === 'answered' ? 'bg-[#e7f8f6] text-[#168d94]' : 'bg-[#fff3df] text-[#ac6c1e]'}`}>{item.status === 'answered' ? 'Répondu' : 'En attente'}</span></div><div className="mt-4 space-y-3"><div className="rounded-xl bg-[#f8fafc] p-3"><p className="mb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#94a1b3]">Vous</p><p className="whitespace-pre-wrap text-sm leading-6 text-[#52617b]">{item.message}</p></div>{item.adminReply && <div className="rounded-xl border-l-4 border-[#26bfc0] bg-[#f5f9fb] p-3"><p className="mb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#168d94]">Administration</p><p className="whitespace-pre-wrap text-sm leading-6 text-[#52617b]">{item.adminReply}</p></div>}{(item.replies || []).map((reply) => <div key={reply.id} className={`rounded-xl p-3 ${reply.author === 'admin' ? 'border-l-4 border-[#26bfc0] bg-[#f5f9fb]' : 'ml-5 bg-[#edf9f7]'}`}><p className="mb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#168d94]">{reply.author === 'admin' ? 'Administration' : 'Vous'}</p><p className="whitespace-pre-wrap text-sm leading-6 text-[#52617b]">{reply.text}</p><p className="mt-2 text-[10px] text-[#94a1b3]">{date(reply.createdAt)}</p></div>)}</div><div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end"><label className="block flex-1"><span className="mb-2 block text-xs font-bold text-[#52617b]">Écrire dans la conversation</span><textarea value={replyDrafts[item.id] || ''} onChange={(event) => setReplyDrafts((current) => ({ ...current, [item.id]: event.target.value }))} rows={2} placeholder="Votre réponse..." className="w-full resize-y rounded-xl border border-[#dce4ee] px-4 py-3 text-sm text-[#182653] outline-none focus:border-[#26bfc0] focus:ring-4 focus:ring-[#26bfc0]/10" data-testid={`textarea-support-followup-${item.id}`} /></label><button onClick={() => sendReply(item.id)} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#182653] px-4 text-sm font-bold text-white" data-testid={`button-support-followup-${item.id}`}><MessageCircle size={16} /> Envoyer</button></div></article>)}</div>}</section>
+    </div>
+  </Shell>;
+}
+
+function AdminSupport({ user, onNotice }: { user: User; onNotice: (notice: Notice) => void }) {
+  const [, setLocation] = useLocation();
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [, refresh] = useState(0);
+  useEffect(() => { if (!user.isAdmin) setLocation('/home'); const timer = window.setInterval(() => refresh((value) => value + 1), 2000); return () => window.clearInterval(timer); }, [user.isAdmin, setLocation]);
+  const messages = read<SupportMessage[]>(STORAGE.support, []).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const reply = (id: string) => {
+    const text = replyDrafts[id]?.trim();
+    if (!text) {
+      onNotice({ message: 'Écrivez une réponse avant de l’envoyer.', kind: 'error' });
+      return;
+    }
+    const updated = messages.map((item) => item.id === id ? { ...item, status: 'answered' as const, adminReply: item.adminReply, replies: [...(item.replies || []), { id: uid('reply'), author: 'admin' as const, text, createdAt: new Date().toISOString() }], repliedAt: new Date().toISOString() } : item);
+    write(STORAGE.support, updated);
+    write(STORAGE.logs, [...read<ActivityLog[]>(STORAGE.logs, []), { id: uid('log'), type: 'support-reply', description: `Réponse envoyée à ${messages.find((item) => item.id === id)?.userName || 'un membre'}`, createdAt: new Date().toISOString() }]);
+    setReplyDrafts((current) => ({ ...current, [id]: '' }));
+    refresh((value) => value + 1);
+    onNotice({ message: 'Réponse envoyée au membre.' });
+  };
+
+  if (!user.isAdmin) return null;
+  const openCount = messages.filter((item) => item.status === 'open').length;
+  return <Shell user={user} path="/admin/support">
+    <PageHeading eyebrow="Relation membres" title="Messages du support" description="Répondez aux préoccupations et poursuivez les conversations avec les utilisateurs." action={<button onClick={() => refresh((value) => value + 1)} className="flex h-11 items-center gap-2 rounded-xl border border-[#dce4ee] bg-white px-4 text-sm font-bold text-[#52617b]" data-testid="button-refresh-support"><RefreshCw size={16} /> Actualiser</button>} />
+    <div className="mb-5 grid gap-4 sm:grid-cols-3"><div className="rounded-2xl bg-[#182653] p-5 text-white"><MessageCircle size={18} className="text-[#26D0CE]" /><p className="mt-5 text-xs text-white/55">Toutes les conversations</p><p className="mt-1 text-3xl font-extrabold">{messages.length}</p></div><div className="rounded-2xl border border-[#e4eaf1] bg-white p-5"><Clock3 size={18} className="text-[#c77a1e]" /><p className="mt-5 text-xs text-[#94a1b3]">À traiter</p><p className="mt-1 text-3xl font-extrabold">{openCount}</p></div><div className="rounded-2xl border border-[#e4eaf1] bg-white p-5"><CheckCircle2 size={18} className="text-[#2b9a78]" /><p className="mt-5 text-xs text-[#94a1b3]">Répondues</p><p className="mt-1 text-3xl font-extrabold">{messages.length - openCount}</p></div></div>
+    <section className="rounded-2xl border border-[#e4eaf1] bg-white p-5 shadow-sm">{messages.length === 0 ? <div className="py-16 text-center"><MessageCircle className="mx-auto text-[#c6d0dc]" size={32} /><p className="mt-3 text-sm font-bold">Aucun message reçu</p><p className="mt-1 text-xs text-[#94a1b3]">Les préoccupations des utilisateurs apparaîtront ici.</p></div> : <div className="space-y-4">{messages.map((item) => <article key={item.id} className="rounded-xl border border-[#edf1f5] p-5"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><div className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e9edff] text-xs font-extrabold text-[#334ba0]">{initials(item.userName)}</span><div><p className="text-sm font-extrabold">{item.userName}</p><p className="text-[10px] text-[#94a1b3]">{item.userEmail} · {date(item.createdAt)}</p></div></div><h2 className="mt-4 text-base font-extrabold text-[#182653]">{item.subject}</h2></div><span className={`self-start rounded-full px-2.5 py-1 text-[10px] font-extrabold ${item.status === 'answered' ? 'bg-[#e7f8f6] text-[#168d94]' : 'bg-[#fff3df] text-[#ac6c1e]'}`}>{item.status === 'answered' ? 'Répondu' : 'À traiter'}</span></div><div className="mt-4 space-y-3"><div className="rounded-xl bg-[#f8fafc] p-4"><p className="mb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#94a1b3]">Message de l’utilisateur</p><p className="whitespace-pre-wrap text-sm leading-6 text-[#52617b]">{item.message}</p></div>{item.adminReply && <div className="rounded-xl border-l-4 border-[#2b9a78] bg-[#edf9f7] p-4"><p className="mb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#168d94]">Réponse précédente</p><p className="whitespace-pre-wrap text-sm leading-6 text-[#52617b]">{item.adminReply}</p></div>}{(item.replies || []).map((reply) => <div key={reply.id} className={`rounded-xl p-4 ${reply.author === 'admin' ? 'border-l-4 border-[#2b9a78] bg-[#edf9f7]' : 'ml-5 bg-[#f8fafc]'}`}><p className="mb-1 text-[10px] font-extrabold uppercase tracking-wider text-[#168d94]">{reply.author === 'admin' ? 'Vous — administration' : item.userName}</p><p className="whitespace-pre-wrap text-sm leading-6 text-[#52617b]">{reply.text}</p><p className="mt-2 text-[10px] text-[#94a1b3]">{date(reply.createdAt)}</p></div>)}</div><div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end"><label className="block flex-1"><span className="mb-2 block text-xs font-bold text-[#52617b]">Écrire une réponse</span><textarea value={replyDrafts[item.id] || ''} onChange={(event) => setReplyDrafts((current) => ({ ...current, [item.id]: event.target.value }))} rows={3} placeholder="Répondez à l’utilisateur..." className="w-full resize-y rounded-xl border border-[#dce4ee] px-4 py-3 text-sm text-[#182653] outline-none focus:border-[#26bfc0] focus:ring-4 focus:ring-[#26bfc0]/10" data-testid={`textarea-support-reply-${item.id}`} /></label><button onClick={() => reply(item.id)} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#182653] px-4 text-sm font-bold text-white" data-testid={`button-support-reply-${item.id}`}><MessageCircle size={16} /> Répondre</button></div></article>)}</div>}</section>
   </Shell>;
 }
 
