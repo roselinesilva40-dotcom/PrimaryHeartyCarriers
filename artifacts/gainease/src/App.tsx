@@ -8,8 +8,8 @@ import bankTransferLogo from '@assets/Screenshot_20260830-142955_1788125687016.j
 import {
   ArrowDownToLine, ArrowRight, BadgeCheck, BarChart3, Bell, Check, CheckCircle2, ChevronRight,
   CircleDollarSign, Clock3, Copy, CreditCard, FileImage, Flame, Gift, History, Home as HomeIcon,
-  Landmark, LayoutDashboard, LogOut, Menu, Play, RefreshCw, ShieldCheck, Timer, TrendingUp,
-  UserRound, Users, WalletCards, X, XCircle,
+  Landmark, LayoutDashboard, LogOut, Menu, MessageCircle, Play, RefreshCw, ShieldCheck, Timer,
+  TrendingUp, UserRound, Users, WalletCards, X, XCircle,
 } from 'lucide-react';
 
 const clerkPubKey = publishableKeyFromHost(
@@ -81,10 +81,11 @@ type User = { id: string; name: string; email: string; password?: string; isAdmi
 type PayoutDetails = { email: string; country?: string; city?: string; firstName?: string; lastName?: string; rib?: string };
 type Withdrawal = { id: string; userId: string; amount: number; method: 'PayPal' | 'Virement'; status: 'pending' | 'approved' | 'rejected'; createdAt: string; kycImage?: string; voucherImage?: string; payoutDetails?: PayoutDetails };
 type VoucherPayment = { id: string; userId: string; amount: 50; status: 'pending' | 'approved' | 'rejected'; createdAt: string; reviewedAt?: string; voucherImage: string };
+type SupportMessage = { id: string; userId: string; userName: string; userEmail: string; subject: string; message: string; status: 'open' | 'answered'; adminReply?: string; createdAt: string; repliedAt?: string };
 type ActivityLog = { id: string; type: string; description: string; createdAt: string };
 type Notice = { message: string; kind?: 'success' | 'error' };
 
-const STORAGE = { users: 'gainease-users', withdrawals: 'gainease-withdrawals', vouchers: 'gainease-voucher-payments', logs: 'gainease-logs', session: 'gainease-jwt', failed: 'gainease-failed-login' };
+const STORAGE = { users: 'gainease-users', withdrawals: 'gainease-withdrawals', vouchers: 'gainease-voucher-payments', support: 'gainease-support-messages', logs: 'gainease-logs', session: 'gainease-jwt', failed: 'gainease-failed-login' };
 const defaultUsers: User[] = [{
   id: 'legacy-demo-user',
   name: 'Camille Martin',
@@ -319,16 +320,17 @@ function Shell({ children, user, path }: { children: ReactNode; user: User; path
   const [, setLocation] = useLocation(); const [mobileOpen, setMobileOpen] = useState(false);
   const { signOut } = useClerk();
   const logout = () => { void signOut({ redirectUrl: basePath || '/' }); };
-  const links = [{ href: '/home', label: 'Accueil', icon: HomeIcon }, { href: '/live', label: 'Retraits en direct', icon: CircleDollarSign }, { href: '/profile', label: 'Profil', icon: UserRound }];
+  const links = [{ href: '/home', label: 'Accueil', icon: HomeIcon }, { href: '/live', label: 'Retraits en direct', icon: CircleDollarSign }, { href: '/support', label: 'Support', icon: MessageCircle }, { href: '/profile', label: 'Profil', icon: UserRound }];
+  const openSupportCount = user.isAdmin ? read<SupportMessage[]>(STORAGE.support, []).filter((item) => item.status === 'open').length : 0;
   return <div className="app-noise min-h-[100dvh] bg-[#f6f9fc] text-[#182653]">
     <aside className={`fixed inset-y-0 left-0 z-30 w-[252px] bg-[#182653] px-4 py-6 text-white transition-transform md:translate-x-0 ${mobileOpen ? 'translate-x-0' : '-translate-x-full'}`}>
       <div className="mb-12 px-3"><Logo light /></div>
       <nav className="space-y-1.5">
         {links.map(({ href, label, icon: Icon }) => <Link key={href} href={href} onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition ${path === href ? 'bg-white/12 text-white' : 'text-white/55 hover:bg-white/7 hover:text-white'}`} data-testid={`link-nav-${label.toLowerCase().replaceAll(' ', '-')}`}><Icon size={18} strokeWidth={path === href ? 2.4 : 1.9} /><span>{label}</span>{path === href && <span className="ml-auto h-1.5 w-1.5 rounded-full bg-[#26D0CE]" />}</Link>)}
-        {user.isAdmin && <Link href="/admin" onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition ${path === '/admin' ? 'bg-white/12 text-white' : 'text-white/55 hover:bg-white/7 hover:text-white'}`} data-testid="link-nav-admin"><LayoutDashboard size={18} /><span>Administration</span></Link>}
+        {user.isAdmin && <><Link href="/admin" onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition ${path === '/admin' ? 'bg-white/12 text-white' : 'text-white/55 hover:bg-white/7 hover:text-white'}`} data-testid="link-nav-admin"><LayoutDashboard size={18} /><span>Administration</span></Link><Link href="/admin/support" onClick={() => setMobileOpen(false)} className={`flex items-center gap-3 rounded-xl px-3.5 py-3 text-sm font-semibold transition ${path === '/admin/support' ? 'bg-white/12 text-white' : 'text-white/55 hover:bg-white/7 hover:text-white'}`} data-testid="link-nav-admin-support"><MessageCircle size={18} /><span>Messages</span>{openSupportCount > 0 && <span className="ml-auto grid min-w-5 place-items-center rounded-full bg-[#26D0CE] px-1.5 py-0.5 text-[10px] font-extrabold text-[#182653]">{openSupportCount}</span>}</Link></>}
       </nav>
       <div className="absolute bottom-6 left-4 right-4">
-        <div className="mb-4 rounded-2xl border border-white/10 bg-white/6 p-3.5"><p className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Besoin d’aide ?</p><p className="mt-1 text-xs leading-5 text-white/70">Notre équipe vous répond sous 24 h.</p><button className="mt-3 text-xs font-bold text-[#26D0CE]" onClick={() => setLocation('/withdraw')} data-testid="button-sidebar-support">Contacter le support</button></div>
+        <div className="mb-4 rounded-2xl border border-white/10 bg-white/6 p-3.5"><p className="text-[11px] font-semibold uppercase tracking-wider text-white/45">Besoin d’aide ?</p><p className="mt-1 text-xs leading-5 text-white/70">Notre équipe vous répond sous 24 h.</p><button className="mt-3 text-xs font-bold text-[#26D0CE]" onClick={() => setLocation('/support')} data-testid="button-sidebar-support">Contacter le support</button></div>
         <button onClick={logout} className="flex w-full items-center gap-3 px-3.5 py-2 text-sm font-semibold text-white/50 hover:text-white" data-testid="button-logout"><LogOut size={17} /> Se déconnecter</button>
       </div>
     </aside>
@@ -512,6 +514,73 @@ function VoucherWithdrawal({ user, updateUser, onNotice }: { user: User; updateU
   </Shell>;
 }
 
+function SupportPage({ user, onNotice }: { user: User; onNotice: (notice: Notice) => void }) {
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [, refresh] = useState(0);
+  useEffect(() => { const timer = window.setInterval(() => refresh((value) => value + 1), 2000); return () => window.clearInterval(timer); }, []);
+  const messages = read<SupportMessage[]>(STORAGE.support, []).filter((item) => item.userId === user.id).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const submit = (event: FormEvent) => {
+    event.preventDefault();
+    if (!message.trim()) {
+      onNotice({ message: 'Écrivez votre préoccupation avant d’envoyer le message.', kind: 'error' });
+      return;
+    }
+    const item: SupportMessage = { id: uid('support'), userId: user.id, userName: user.name, userEmail: user.email, subject: subject.trim() || 'Question générale', message: message.trim(), status: 'open', createdAt: new Date().toISOString() };
+    write(STORAGE.support, [item, ...read<SupportMessage[]>(STORAGE.support, [])]);
+    write(STORAGE.logs, [...read<ActivityLog[]>(STORAGE.logs, []), { id: uid('log'), type: 'support', description: `${user.name} a envoyé une demande au support`, createdAt: new Date().toISOString() }]);
+    setSubject('');
+    setMessage('');
+    onNotice({ message: 'Votre message a été envoyé à l’administration.' });
+  };
+
+  return <Shell user={user} path="/support">
+    <PageHeading eyebrow="Une question ?" title="Contacter le support" description="Écrivez-nous votre préoccupation. L’administration pourra vous répondre directement ici." />
+    <div className="grid gap-5 lg:grid-cols-[.9fr_1.1fr]">
+      <section className="rounded-2xl border border-[#e4eaf1] bg-white p-6 shadow-sm">
+        <div className="flex items-center gap-3"><div className="grid h-11 w-11 place-items-center rounded-xl bg-[#eaf9f7] text-[#168d94]"><MessageCircle size={20} /></div><div><h2 className="font-extrabold">Nouvelle demande</h2><p className="text-xs text-[#718098]">Réponse dans votre espace personnel.</p></div></div>
+        <form onSubmit={submit} className="mt-6 space-y-4">
+          <Field label="Sujet" value={subject} onChange={setSubject} placeholder="Ex. Question sur mon retrait" required={false} testId="input-support-subject" />
+          <label className="block"><span className="mb-2 block text-xs font-bold text-[#52617b]">Votre préoccupation</span><textarea value={message} onChange={(event) => setMessage(event.target.value)} rows={6} placeholder="Écrivez votre message ici..." required className="w-full resize-y rounded-xl border border-[#dce4ee] bg-white px-4 py-3 text-sm text-[#182653] outline-none transition placeholder:text-[#a4afbf] focus:border-[#26bfc0] focus:ring-4 focus:ring-[#26bfc0]/10" data-testid="textarea-support-message" /></label>
+          <button type="submit" className="flex h-12 w-full items-center justify-center gap-2 rounded-xl bg-gradient-to-r from-[#1A2980] to-[#26bfc0] text-sm font-bold text-white shadow-lg shadow-[#1A2980]/15 transition hover:-translate-y-0.5" data-testid="button-send-support"><MessageCircle size={17} /> Envoyer au support</button>
+        </form>
+      </section>
+      <section className="rounded-2xl border border-[#e4eaf1] bg-white p-6 shadow-sm"><div className="flex items-center justify-between"><div><h2 className="font-extrabold">Mes conversations</h2><p className="mt-1 text-xs text-[#94a1b3]">Retrouvez vos demandes et les réponses reçues.</p></div><span className="rounded-full bg-[#edf2f7] px-2.5 py-1 text-[10px] font-extrabold text-[#718098]">{messages.length} message{messages.length > 1 ? 's' : ''}</span></div>{messages.length === 0 ? <div className="py-14 text-center"><MessageCircle className="mx-auto text-[#c6d0dc]" size={30} /><p className="mt-3 text-sm font-bold">Aucune conversation</p><p className="mt-1 text-xs text-[#94a1b3]">Votre première demande apparaîtra ici.</p></div> : <div className="mt-5 space-y-4">{messages.map((item) => <article key={item.id} className="rounded-xl border border-[#edf1f5] p-4"><div className="flex items-start justify-between gap-3"><div><p className="text-sm font-extrabold text-[#182653]">{item.subject}</p><p className="mt-1 text-[10px] text-[#94a1b3]">{date(item.createdAt)}</p></div><span className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-extrabold ${item.status === 'answered' ? 'bg-[#e7f8f6] text-[#168d94]' : 'bg-[#fff3df] text-[#ac6c1e]'}`}>{item.status === 'answered' ? 'Répondu' : 'En attente'}</span></div><p className="mt-4 whitespace-pre-wrap text-sm leading-6 text-[#52617b]">{item.message}</p>{item.adminReply && <div className="mt-4 rounded-xl border-l-4 border-[#26bfc0] bg-[#f5f9fb] p-4"><p className="text-[10px] font-extrabold uppercase tracking-wider text-[#168d94]">Réponse de l’administration</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#52617b]">{item.adminReply}</p><p className="mt-2 text-[10px] text-[#94a1b3]">{item.repliedAt ? date(item.repliedAt) : ''}</p></div>}</article>)}</div>}</section>
+    </div>
+  </Shell>;
+}
+
+function AdminSupport({ user, onNotice }: { user: User; onNotice: (notice: Notice) => void }) {
+  const [, setLocation] = useLocation();
+  const [replyDrafts, setReplyDrafts] = useState<Record<string, string>>({});
+  const [, refresh] = useState(0);
+  useEffect(() => { if (!user.isAdmin) setLocation('/home'); const timer = window.setInterval(() => refresh((value) => value + 1), 2000); return () => window.clearInterval(timer); }, [user.isAdmin, setLocation]);
+  const messages = read<SupportMessage[]>(STORAGE.support, []).sort((a, b) => b.createdAt.localeCompare(a.createdAt));
+
+  const reply = (id: string) => {
+    const text = replyDrafts[id]?.trim();
+    if (!text) {
+      onNotice({ message: 'Écrivez une réponse avant de l’envoyer.', kind: 'error' });
+      return;
+    }
+    const updated = messages.map((item) => item.id === id ? { ...item, status: 'answered' as const, adminReply: text, repliedAt: new Date().toISOString() } : item);
+    write(STORAGE.support, updated);
+    write(STORAGE.logs, [...read<ActivityLog[]>(STORAGE.logs, []), { id: uid('log'), type: 'support-reply', description: `Réponse envoyée à ${messages.find((item) => item.id === id)?.userName || 'un membre'}`, createdAt: new Date().toISOString() }]);
+    setReplyDrafts((current) => ({ ...current, [id]: '' }));
+    refresh((value) => value + 1);
+    onNotice({ message: 'Réponse envoyée au membre.' });
+  };
+
+  if (!user.isAdmin) return null;
+  const openCount = messages.filter((item) => item.status === 'open').length;
+  return <Shell user={user} path="/admin/support">
+    <PageHeading eyebrow="Relation membres" title="Messages du support" description="Répondez aux préoccupations des utilisateurs depuis cet espace." action={<button onClick={() => refresh((value) => value + 1)} className="flex h-11 items-center gap-2 rounded-xl border border-[#dce4ee] bg-white px-4 text-sm font-bold text-[#52617b]" data-testid="button-refresh-support"><RefreshCw size={16} /> Actualiser</button>} />
+    <div className="mb-5 grid gap-4 sm:grid-cols-3"><div className="rounded-2xl bg-[#182653] p-5 text-white"><MessageCircle size={18} className="text-[#26D0CE]" /><p className="mt-5 text-xs text-white/55">Toutes les demandes</p><p className="mt-1 text-3xl font-extrabold">{messages.length}</p></div><div className="rounded-2xl border border-[#e4eaf1] bg-white p-5"><Clock3 size={18} className="text-[#c77a1e]" /><p className="mt-5 text-xs text-[#94a1b3]">À traiter</p><p className="mt-1 text-3xl font-extrabold">{openCount}</p></div><div className="rounded-2xl border border-[#e4eaf1] bg-white p-5"><CheckCircle2 size={18} className="text-[#2b9a78]" /><p className="mt-5 text-xs text-[#94a1b3]">Répondues</p><p className="mt-1 text-3xl font-extrabold">{messages.length - openCount}</p></div></div>
+    <section className="rounded-2xl border border-[#e4eaf1] bg-white p-5 shadow-sm">{messages.length === 0 ? <div className="py-16 text-center"><MessageCircle className="mx-auto text-[#c6d0dc]" size={32} /><p className="mt-3 text-sm font-bold">Aucun message reçu</p><p className="mt-1 text-xs text-[#94a1b3]">Les préoccupations des utilisateurs apparaîtront ici.</p></div> : <div className="space-y-4">{messages.map((item) => <article key={item.id} className="rounded-xl border border-[#edf1f5] p-5"><div className="flex flex-col justify-between gap-3 sm:flex-row sm:items-start"><div><div className="flex items-center gap-2"><span className="grid h-9 w-9 place-items-center rounded-xl bg-[#e9edff] text-xs font-extrabold text-[#334ba0]">{initials(item.userName)}</span><div><p className="text-sm font-extrabold">{item.userName}</p><p className="text-[10px] text-[#94a1b3]">{item.userEmail} · {date(item.createdAt)}</p></div></div><h2 className="mt-4 text-base font-extrabold text-[#182653]">{item.subject}</h2></div><span className={`self-start rounded-full px-2.5 py-1 text-[10px] font-extrabold ${item.status === 'answered' ? 'bg-[#e7f8f6] text-[#168d94]' : 'bg-[#fff3df] text-[#ac6c1e]'}`}>{item.status === 'answered' ? 'Répondu' : 'À traiter'}</span></div><p className="mt-4 whitespace-pre-wrap rounded-xl bg-[#f8fafc] p-4 text-sm leading-6 text-[#52617b]">{item.message}</p>{item.adminReply ? <div className="mt-4 rounded-xl border-l-4 border-[#2b9a78] bg-[#edf9f7] p-4"><p className="text-[10px] font-extrabold uppercase tracking-wider text-[#168d94]">Votre réponse</p><p className="mt-2 whitespace-pre-wrap text-sm leading-6 text-[#52617b]">{item.adminReply}</p></div> : <div className="mt-4 flex flex-col gap-3 sm:flex-row sm:items-end"><label className="block flex-1"><span className="mb-2 block text-xs font-bold text-[#52617b]">Répondre</span><textarea value={replyDrafts[item.id] || ''} onChange={(event) => setReplyDrafts((current) => ({ ...current, [item.id]: event.target.value }))} rows={3} placeholder="Écrivez votre réponse..." className="w-full resize-y rounded-xl border border-[#dce4ee] px-4 py-3 text-sm text-[#182653] outline-none focus:border-[#26bfc0] focus:ring-4 focus:ring-[#26bfc0]/10" data-testid={`textarea-support-reply-${item.id}`} /></label><button onClick={() => reply(item.id)} className="flex h-11 items-center justify-center gap-2 rounded-xl bg-[#182653] px-4 text-sm font-bold text-white" data-testid={`button-support-reply-${item.id}`}><MessageCircle size={16} /> Répondre</button></div>}</article>)}</div>}</section>
+  </Shell>;
+}
+
 function Profile({ user, onNotice }: { user: User; onNotice: (notice: Notice) => void }) {
   const [, setLocation] = useLocation(); const { signOut } = useClerk(); const logout = () => { void signOut({ redirectUrl: basePath || '/' }); };
   return <Shell user={user} path="/profile"><PageHeading eyebrow="Votre espace" title="Profil et sécurité" description="Vos informations, vos performances et les accès de votre compte." /><div className="grid gap-5 lg:grid-cols-[.8fr_1.2fr]"><section className="rounded-2xl bg-gradient-to-br from-[#1A2980] to-[#26D0CE] p-7 text-white shadow-lg shadow-[#1A2980]/15"><span className="grid h-16 w-16 place-items-center rounded-2xl bg-white/15 text-xl font-extrabold">{initials(user.name)}</span><h2 className="mt-5 text-2xl font-extrabold tracking-[-.04em]">{user.name}</h2><p className="mt-1 text-sm text-white/65">{user.email}</p><span className="mt-5 inline-flex items-center gap-1.5 rounded-full border border-white/20 bg-white/10 px-2.5 py-1 text-[10px] font-extrabold uppercase tracking-wide"><BadgeCheck size={13} /> {user.isAdmin ? 'Administrateur' : 'Membre vérifié'}</span><div className="mt-8 border-t border-white/15 pt-5"><p className="text-[10px] font-bold uppercase tracking-wider text-white/55">Membre depuis</p><p className="mt-1 text-sm font-bold">{new Intl.DateTimeFormat('fr-FR', { day: 'numeric', month: 'long', year: 'numeric' }).format(new Date(user.createdAt))}</p></div></section><section className="rounded-2xl border border-[#e4eaf1] bg-white p-6 shadow-sm"><h2 className="font-extrabold">Vos chiffres</h2><div className="mt-5 grid grid-cols-2 gap-3 sm:grid-cols-3"><div className="rounded-xl bg-[#f7fafc] p-4"><p className="text-xs text-[#718098]">Solde actuel</p><p className="mt-2 text-xl font-extrabold">{money.format(user.balance)}</p></div><div className="rounded-xl bg-[#f7fafc] p-4"><p className="text-xs text-[#718098]">Vidéos vues</p><p className="mt-2 text-xl font-extrabold">{user.videosWatched}</p></div><div className="rounded-xl bg-[#f7fafc] p-4"><p className="text-xs text-[#718098]">Gains totaux</p><p className="mt-2 text-xl font-extrabold">{money.format(user.videosWatched * 5 + user.referrals * 10)}</p></div></div><div className="mt-6 flex items-center justify-between border-t border-[#edf1f5] pt-5"><div className="flex items-center gap-3"><Gift size={18} className="text-[#c77a1e]" /><div><p className="text-sm font-bold">{user.referrals} parrainages</p><p className="text-xs text-[#94a1b3]">Code {user.referralCode}</p></div></div><button onClick={() => { navigator.clipboard?.writeText(user.referralCode); onNotice({ message: 'Code copié.' }); }} className="rounded-lg p-2 text-[#168d94] hover:bg-[#edf9f7]" aria-label="Copier le code" data-testid="button-profile-copy"><Copy size={16} /></button></div><div className="mt-6 flex flex-wrap gap-3"><button onClick={logout} className="flex items-center gap-2 rounded-xl border border-[#e4eaf1] px-4 py-2.5 text-sm font-bold text-[#718098] hover:bg-[#f7fafc]" data-testid="button-profile-logout"><LogOut size={16} /> Se déconnecter</button>{user.isAdmin && <button onClick={() => setLocation('/admin')} className="flex items-center gap-2 rounded-xl bg-[#182653] px-4 py-2.5 text-sm font-bold text-white" data-testid="button-open-admin"><LayoutDashboard size={16} /> Ouvrir l’administration</button>}</div></section></div></Shell>;
@@ -614,8 +683,10 @@ function AppRouter({ onNotice, bump }: { onNotice: (notice: Notice) => void; bum
     <Route path="/home"><AuthGuard onNotice={onNotice}>{(user) => <Home user={user} updateUser={updateUser} onNotice={onNotice} />}</AuthGuard></Route>
     <Route path="/live"><AuthGuard onNotice={onNotice}>{(user) => <Live user={user} onNotice={onNotice} />}</AuthGuard></Route>
     <Route path="/withdraw"><AuthGuard onNotice={onNotice}>{(user) => <VoucherWithdrawal user={user} updateUser={updateUser} onNotice={onNotice} />}</AuthGuard></Route>
+    <Route path="/support"><AuthGuard onNotice={onNotice}>{(user) => <SupportPage user={user} onNotice={onNotice} />}</AuthGuard></Route>
     <Route path="/profile"><AuthGuard onNotice={onNotice}>{(user) => <Profile user={user} onNotice={onNotice} />}</AuthGuard></Route>
     <Route path="/admin"><AuthGuard onNotice={onNotice}>{(user) => <Admin user={user} onNotice={onNotice} />}</AuthGuard></Route>
+    <Route path="/admin/support"><AuthGuard onNotice={onNotice}>{(user) => <AdminSupport user={user} onNotice={onNotice} />}</AuthGuard></Route>
     <Route><RedirectHome /></Route>
   </Switch>;
 }
