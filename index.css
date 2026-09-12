@@ -1,0 +1,927 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Space+Mono:wght@400;700&display=swap');
+@import 'tailwindcss';
+@import 'tw-animate-css';
+@plugin "@tailwindcss/typography";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
+
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-card-border: hsl(var(--card-border));
+
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-popover-border: hsl(var(--popover-border));
+
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-primary-border: var(--primary-border);
+
+  --color-secondary: hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-secondary-border: var(--secondary-border);
+
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-muted-border: var(--muted-border);
+
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-accent-border: var(--accent-border);
+
+  --color-destructive: hsl(var(--destructive));
+  --color-destructive-foreground: hsl(var(--destructive-foreground));
+  --color-destructive-border: var(--destructive-border);
+
+  --color-chart-1: hsl(var(--chart-1));
+  --color-chart-2: hsl(var(--chart-2));
+  --color-chart-3: hsl(var(--chart-3));
+  --color-chart-4: hsl(var(--chart-4));
+  --color-chart-5: hsl(var(--chart-5));
+
+  --color-sidebar: hsl(var(--sidebar));
+  --color-sidebar-foreground: hsl(var(--sidebar-foreground));
+  --color-sidebar-border: hsl(var(--sidebar-border));
+  --color-sidebar-primary: hsl(var(--sidebar-primary));
+  --color-sidebar-primary-foreground: hsl(var(--sidebar-primary-foreground));
+  --color-sidebar-primary-border: var(--sidebar-primary-border);
+  --color-sidebar-accent: hsl(var(--sidebar-accent));
+  --color-sidebar-accent-foreground: hsl(var(--sidebar-accent-foreground));
+  --color-sidebar-accent-border: var(--sidebar-accent-border);
+  --color-sidebar-ring: hsl(var(--sidebar-ring));
+
+  --font-sans: var(--app-font-sans);
+  --font-serif: var(--app-font-serif);
+  --font-mono: var(--app-font-mono);
+
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+}
+
+/* LIGHT MODE */
+:root {
+  --button-outline: rgba(0, 0, 0, 0.1);
+  --badge-outline: rgba(0, 0, 0, 0.05);
+
+  /* Automatic computation of border around primary / danger buttons */
+  --opaque-button-border-intensity: -8; /* In terms of percentages */
+
+  /* Backgrounds applied on top of other backgrounds when hovered/active */
+  --elevate-1: rgba(0, 0, 0, 0.03);
+  --elevate-2: rgba(0, 0, 0, 0.08);
+
+  --background: 210 33% 97%;
+  --foreground: 210 53% 17%;
+  --border: 207 25% 88%;
+  --card: 0 0% 100%;
+  --card-foreground: 210 53% 17%;
+  --card-border: 207 25% 90%;
+  --sidebar: 210 61% 16%;
+  --sidebar-foreground: 210 33% 96%;
+  --sidebar-border: 210 42% 28%;
+  --sidebar-primary: 161 47% 45%;
+  --sidebar-primary-foreground: 210 61% 16%;
+  --sidebar-accent: 210 47% 24%;
+  --sidebar-accent-foreground: 210 33% 96%;
+  --sidebar-ring: 161 47% 45%;
+  --popover: 0 0% 100%;
+  --popover-foreground: 210 53% 17%;
+  --popover-border: 207 25% 90%;
+  --primary: 210 61% 22%;
+  --primary-foreground: 0 0% 100%;
+  --secondary: 207 32% 91%;
+  --secondary-foreground: 210 53% 22%;
+  --muted: 207 25% 93%;
+  --muted-foreground: 210 16% 46%;
+  --accent: 161 47% 45%;
+  --accent-foreground: 210 61% 16%;
+  --destructive: 4 47% 48%;
+  --destructive-foreground: 0 0% 100%;
+  --input: 207 25% 82%;
+  --ring: 161 47% 38%;
+  --chart-1: 161 47% 45%;
+  --chart-2: 210 61% 22%;
+  --chart-3: 39 56% 51%;
+  --chart-4: 4 47% 48%;
+  --chart-5: 210 35% 55%;
+
+  --app-font-sans: 'Inter', sans-serif;
+  --app-font-serif: Georgia, serif;
+  --app-font-mono: Menlo, monospace;
+  --radius: 1rem;
+  --shadow-2xs: 0px 2px 0px 0px hsl(221 31% 18% / 0.02);
+  --shadow-xs: 0px 2px 0px 0px hsl(221 31% 18% / 0.03);
+  --shadow-sm:
+    0px 2px 0px 0px hsl(221 31% 18% / 0.02),
+    0px 1px 2px -1px hsl(221 31% 18% / 0.08);
+  --shadow:
+    0px 2px 0px 0px hsl(221 31% 18% / 0.02),
+    0px 1px 2px -1px hsl(221 31% 18% / 0.08);
+  --shadow-md:
+    0px 2px 0px 0px hsl(221 31% 18% / 0.02),
+    0px 2px 4px -1px hsl(221 31% 18% / 0.1);
+  --shadow-lg:
+    0px 2px 0px 0px hsl(221 31% 18% / 0.02),
+    0px 4px 6px -1px hsl(221 31% 18% / 0.12);
+  --shadow-xl:
+    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
+    0px 8px 10px -1px hsl(202.8169 89.1213% 53.1373% / 0);
+  --shadow-2xl: 0px 10px 30px -10px hsl(221 31% 18% / 0.18);
+  --tracking-normal: 0em;
+  --spacing: 0.25rem;
+
+  /* Automatically computed borders - intensity can be controlled by the user by the --opaque-button-border-intensity setting */
+
+  /* Fallback for older browsers */
+  --sidebar-primary-border: hsl(var(--sidebar-primary));
+  --sidebar-primary-border: hsl(
+    from hsl(var(--sidebar-primary)) h s
+      calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+
+  /* Fallback for older browsers */
+  --sidebar-accent-border: hsl(var(--sidebar-accent));
+  --sidebar-accent-border: hsl(
+    from hsl(var(--sidebar-accent)) h s
+      calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+
+  /* Fallback for older browsers */
+  --primary-border: hsl(var(--primary));
+  --primary-border: hsl(
+    from hsl(var(--primary)) h s
+      calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+
+  /* Fallback for older browsers */
+  --secondary-border: hsl(var(--secondary));
+  --secondary-border: hsl(
+    from hsl(var(--secondary)) h s
+      calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+
+  /* Fallback for older browsers */
+  --muted-border: hsl(var(--muted));
+  --muted-border: hsl(
+    from hsl(var(--muted)) h s calc(l + var(--opaque-button-border-intensity)) /
+      alpha
+  );
+
+  /* Fallback for older browsers */
+  --accent-border: hsl(var(--accent));
+  --accent-border: hsl(
+    from hsl(var(--accent)) h s
+      calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+
+  /* Fallback for older browsers */
+  --destructive-border: hsl(var(--destructive));
+  --destructive-border: hsl(
+    from hsl(var(--destructive)) h s
+      calc(l + var(--opaque-button-border-intensity)) / alpha
+  );
+}
+
+.dark {
+  --button-outline: rgba(255, 255, 255, 0.1);
+  --badge-outline: rgba(255, 255, 255, 0.05);
+
+  --opaque-button-border-intensity: 9; /* In terms of percentages */
+
+  /* Backgrounds applied on top of other backgrounds when hovered/active */
+  --elevate-1: rgba(255, 255, 255, 0.04);
+  --elevate-2: rgba(255, 255, 255, 0.09);
+
+  --background: 210 42% 10%;
+  --foreground: 210 33% 96%;
+  --border: 210 27% 27%;
+  --card: 210 43% 16%;
+  --card-foreground: 210 33% 96%;
+  --card-border: 210 27% 27%;
+  --sidebar: 210 61% 8%;
+  --sidebar-foreground: 210 33% 96%;
+  --sidebar-border: 210 27% 21%;
+  --sidebar-primary: 161 47% 52%;
+  --sidebar-primary-foreground: 210 61% 8%;
+  --sidebar-accent: 210 47% 20%;
+  --sidebar-accent-foreground: 210 33% 96%;
+  --sidebar-ring: 161 47% 52%;
+  --popover: 210 43% 16%;
+  --popover-foreground: 210 33% 96%;
+  --popover-border: 210 27% 27%;
+  --primary: 161 47% 52%;
+  --primary-foreground: 210 61% 8%;
+  --secondary: 210 36% 23%;
+  --secondary-foreground: 210 33% 96%;
+  --muted: 210 31% 21%;
+  --muted-foreground: 210 20% 70%;
+  --accent: 39 56% 55%;
+  --accent-foreground: 210 61% 8%;
+  --destructive: 4 47% 58%;
+  --destructive-foreground: 210 61% 8%;
+  --input: 210 27% 30%;
+  --ring: 161 47% 52%;
+  --chart-1: 161 47% 52%;
+  --chart-2: 39 56% 55%;
+  --chart-3: 4 47% 58%;
+  --chart-4: 210 35% 65%;
+  --chart-5: 210 61% 48%;
+
+  --shadow-2xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0);
+  --shadow-xs: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0);
+  --shadow-sm:
+    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
+    0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0);
+  --shadow:
+    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
+    0px 1px 2px -1px hsl(202.8169 89.1213% 53.1373% / 0);
+  --shadow-md:
+    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
+    0px 2px 4px -1px hsl(202.8169 89.1213% 53.1373% / 0);
+  --shadow-lg:
+    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
+    0px 4px 6px -1px hsl(202.8169 89.1213% 53.1373% / 0);
+  --shadow-xl:
+    0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0),
+    0px 8px 10px -1px hsl(202.8169 89.1213% 53.1373% / 0);
+  --shadow-2xl: 0px 2px 0px 0px hsl(202.8169 89.1213% 53.1373% / 0);
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply font-sans antialiased bg-background text-foreground;
+    min-width: 320px;
+    overflow-x: hidden;
+  }
+
+  button, a, input, select {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  button:focus-visible, a:focus-visible, input:focus-visible, select:focus-visible {
+    outline: 3px solid hsl(var(--ring) / 0.42);
+    outline-offset: 2px;
+  }
+}
+
+.auth-input {
+  width: 100%;
+  border: 1px solid #d7e1e8;
+  border-radius: 0.75rem;
+  background: #fbfcfd;
+  padding: 0.75rem 0.75rem 0.75rem 2.5rem;
+  color: #102a43;
+  font-size: 0.8125rem;
+  font-weight: 600;
+  transition: border-color 160ms ease, box-shadow 160ms ease, background-color 160ms ease;
+}
+
+.auth-input::placeholder {
+  color: #8b99a5;
+  font-weight: 500;
+}
+
+.auth-input:focus {
+  border-color: #3ba88f;
+  background: #fff;
+  box-shadow: 0 0 0 4px rgba(59, 168, 143, 0.14);
+  outline: none;
+}
+
+.animate-in {
+  animation: enter 240ms cubic-bezier(.22,.8,.35,1) both;
+}
+
+.live-dot {
+  display: inline-block;
+  height: 7px;
+  width: 7px;
+  border-radius: 999px;
+  background: #3ba88f;
+  box-shadow: 0 0 0 4px rgba(59, 168, 143, 0.14);
+}
+
+@keyframes enter {
+  from { opacity: 0; transform: translateY(7px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *, *::before, *::after {
+    scroll-behavior: auto !important;
+    animation-duration: 0.01ms !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/**
+ * Using the elevate system.
+ * Automatic contrast adjustment.
+ *
+ * <element className="hover-elevate" />
+ * <element className="active-elevate-2" />
+ *
+ * // Using the tailwind utility when a data attribute is "on"
+ * <element className="toggle-elevate data-[state=on]:toggle-elevated" />
+ * // Or manually controlling the toggle state
+ * <element className="toggle-elevate toggle-elevated" />
+ *
+ * Elevation systems have to handle many states.
+ * - not-hovered, vs. hovered vs. active  (three mutually exclusive states)
+ * - toggled or not
+ * - focused or not (this is not handled with these utilities)
+ *
+ * Even without handling focused or not, this is six possible combinations that
+ * need to be distinguished from eachother visually.
+ */
+@layer utilities {
+  /* Hide ugly search cancel button in Chrome until we can style it properly */
+  input[type='search']::-webkit-search-cancel-button {
+    @apply hidden;
+  }
+
+  /* Placeholder styling for contentEditable div */
+  [contenteditable][data-placeholder]:empty::before {
+    content: attr(data-placeholder);
+    color: hsl(var(--muted-foreground));
+    pointer-events: none;
+  }
+
+  /* .no-default-hover-elevate/no-default-active-elevate is an escape hatch so consumers of
+   * buttons/badges can remove the automatic brightness adjustment on interactions
+   * and program their own. */
+  .no-default-hover-elevate {
+  }
+
+  .no-default-active-elevate {
+  }
+
+  /**
+   * Toggleable backgrounds go behind the content. Hoverable/active goes on top.
+   * This way they can stack/compound. Both will overlap the parent's borders!
+   * So borders will be automatically adjusted both on toggle, and hover/active,
+   * and they will be compounded.
+   */
+  .toggle-elevate::before,
+  .toggle-elevate-2::before {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    /*border-radius: inherit;   match rounded corners */
+    border-radius: inherit;
+    z-index: -1;
+    /* sits behind content but above backdrop */
+  }
+
+  .toggle-elevate.toggle-elevated::before {
+    background-color: var(--elevate-2);
+  }
+
+  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
+  .border.toggle-elevate::before {
+    inset: -1px;
+  }
+
+  /* Does not work on elements with overflow:hidden! */
+  .hover-elevate:not(.no-default-hover-elevate),
+  .active-elevate:not(.no-default-active-elevate),
+  .hover-elevate-2:not(.no-default-hover-elevate),
+  .active-elevate-2:not(.no-default-active-elevate) {
+    position: relative;
+    z-index: 0;
+  }
+
+  .hover-elevate:not(.no-default-hover-elevate)::after,
+  .active-elevate:not(.no-default-active-elevate)::after,
+  .hover-elevate-2:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:not(.no-default-active-elevate)::after {
+    content: '';
+    pointer-events: none;
+    position: absolute;
+    inset: 0px;
+    /*border-radius: inherit;   match rounded corners */
+    border-radius: inherit;
+    z-index: 999;
+    /* sits in front of content */
+  }
+
+  .hover-elevate:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-1);
+  }
+
+  .hover-elevate-2:hover:not(.no-default-hover-elevate)::after,
+  .active-elevate-2:active:not(.no-default-active-elevate)::after {
+    background-color: var(--elevate-2);
+  }
+
+  /* If there's a 1px border, adjust the inset so that it covers that parent's border */
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate-2:not(.no-hover-interaction-elevate)::after,
+  .border.active-elevate-2:not(.no-active-interaction-elevate)::after,
+  .border.hover-elevate:not(.no-hover-interaction-elevate)::after {
+    inset: -1px;
+  }
+}
+
+/* GainEase professional palette: keeps the existing UI structure intact while
+   harmonising the hard-coded component colors with the new brand direction. */
+[class*="bg-[#18245d]"],
+[class*="bg-[#1A2980]"],
+[class*="bg-[#1a285a]"] {
+  background-color: #102a43 !important;
+}
+
+[class*="bg-[#293778]"] {
+  background-color: #173d5b !important;
+}
+
+[class*="bg-[#273e98]"] {
+  background-color: #315477 !important;
+}
+
+[class*="bg-[#078c84]"] {
+  background-color: #0f766e !important;
+}
+
+[class*="bg-[#087b6e]"] {
+  background-color: #0b5f5b !important;
+}
+
+[class*="bg-[#0daaa4]"] {
+  background-color: #177d78 !important;
+}
+
+[class*="bg-[#26D0CE]"],
+[class*="bg-[#26d0ce]"] {
+  background-color: #3ba88f !important;
+}
+
+[class*="bg-[#70f0e4]"] {
+  background-color: #7bd1bb !important;
+}
+
+[class*="bg-[#e1f8f3]"],
+[class*="bg-[#d9f5f1]"],
+[class*="bg-[#e8faf7]"] {
+  background-color: #e1f2ed !important;
+}
+
+[class*="bg-[#f2f8f8]"],
+[class*="bg-[#f7fbfb]"],
+[class*="bg-[#f8fcfc]"],
+[class*="bg-[#fbfdfd]"],
+[class*="bg-[#f5f9f9]"],
+[class*="bg-[#eff7f7]"],
+[class*="bg-[#edf5f5]"],
+[class*="bg-[#edf3f3]"] {
+  background-color: #f4f7f9 !important;
+}
+
+[class*="bg-[#e7edff]"],
+[class*="bg-[#e3eaff]"],
+[class*="bg-[#edf5ff]"],
+[class*="bg-[#f1f5ff]"] {
+  background-color: #e8eef4 !important;
+}
+
+[class*="bg-[#fff3d7]"],
+[class*="bg-[#fff8e8]"] {
+  background-color: #f5eedc !important;
+}
+
+[class*="bg-[#fff0ef]"],
+[class*="bg-[#fff6f5]"] {
+  background-color: #faeeed !important;
+}
+
+[class*="text-[#18245d]"],
+[class*="text-[#1A2980]"],
+[class*="text-[#1a285a]"],
+[class*="text-[#1d2948]"],
+[class*="text-[#25305d]"] {
+  color: #102a43 !important;
+}
+
+[class*="text-[#293778]"],
+[class*="text-[#273e98]"],
+[class*="text-[#263987]"],
+[class*="text-[#20368b]"],
+[class*="text-[#5265bd]"] {
+  color: #496783 !important;
+}
+
+[class*="text-[#078c84]"] {
+  color: #0f766e !important;
+}
+
+[class*="text-[#087b6e]"] {
+  color: #0b5f5b !important;
+}
+
+[class*="text-[#0daaa4]"],
+[class*="text-[#26D0CE]"],
+[class*="text-[#26d0ce]"],
+[class*="text-[#70f0e4]"],
+[class*="text-[#65efe0]"] {
+  color: #2f927d !important;
+}
+
+[class*="text-[#33445f]"],
+[class*="text-[#374563]"],
+[class*="text-[#42536a]"],
+[class*="text-[#536779]"],
+[class*="text-[#526478]"],
+[class*="text-[#6e8191]"] {
+  color: #425b70 !important;
+}
+
+[class*="text-[#71818e]"],
+[class*="text-[#71818f]"],
+[class*="text-[#73818e]"],
+[class*="text-[#7b8b95]"],
+[class*="text-[#819098]"],
+[class*="text-[#84909a]"],
+[class*="text-[#8a979f]"],
+[class*="text-[#8e9aa2]"],
+[class*="text-[#93a0a7]"],
+[class*="text-[#9aa5aa]"],
+[class*="text-[#9eb4b6]"],
+[class*="text-[#a6b2b5]"] {
+  color: #718394 !important;
+}
+
+[class*="text-[#adb7dd]"],
+[class*="text-[#aeb9dd]"],
+[class*="text-[#9ea9d0]"],
+[class*="text-[#c4d1f5]"],
+[class*="text-[#b8c7ef]"] {
+  color: #b8c7d3 !important;
+}
+
+[class*="text-[#b67a17]"],
+[class*="text-[#a87217]"],
+[class*="text-[#946b20]"],
+[class*="text-[#93691e]"],
+[class*="text-[#8e671f]"] {
+  color: #80642f !important;
+}
+
+[class*="text-[#b4433e]"] {
+  color: #a84a45 !important;
+}
+
+[class*="border-[#18245d]"],
+[class*="border-[#1A2980]"] {
+  border-color: #102a43 !important;
+}
+
+[class*="border-[#078c84]"],
+[class*="border-[#26D0CE]"],
+[class*="border-[#26d0ce]"],
+[class*="border-[#9edfd8]"],
+[class*="border-[#b8deda]"] {
+  border-color: #a5d6c9 !important;
+}
+
+[class*="border-[#dbe9e8]"],
+[class*="border-[#dfeeed]"],
+[class*="border-[#dceceb]"],
+[class*="border-[#e0eeed]"],
+[class*="border-[#edf3f3]"],
+[class*="border-[#edf4f4]"] {
+  border-color: #d7e2e8 !important;
+}
+
+[class*="border-[#f0d8d6]"] {
+  border-color: #ecd2cf !important;
+}
+
+[class*="from-[#1A2980]"],
+[class*="from-[#1a2980]"],
+[class*="from-[#18245d]"] {
+  --tw-gradient-from: #102a43 !important;
+  --tw-gradient-to: rgb(16 42 67 / 0) !important;
+}
+
+[class*="to-[#26D0CE]"],
+[class*="to-[#26d0ce]"] {
+  --tw-gradient-to: #3ba88f !important;
+}
+
+[class*="to-[#273e98]"] {
+  --tw-gradient-to: #315477 !important;
+}
+
+/* Full interface refresh disabled to restore the previous GainEase appearance:
+:root {
+  --background: 225 33% 97%;
+  --foreground: 220 29% 15%;
+  --border: 225 22% 89%;
+  --card-foreground: 220 29% 15%;
+  --card-border: 225 22% 90%;
+  --sidebar: 229 40% 12%;
+  --sidebar-foreground: 225 33% 97%;
+  --sidebar-border: 229 28% 24%;
+  --sidebar-primary: 232 58% 58%;
+  --sidebar-primary-foreground: 229 40% 12%;
+  --sidebar-accent: 229 32% 21%;
+  --sidebar-accent-foreground: 225 33% 97%;
+  --sidebar-ring: 232 58% 58%;
+  --popover-foreground: 220 29% 15%;
+  --popover-border: 225 22% 90%;
+  --primary: 229 40% 26%;
+  --secondary: 225 23% 92%;
+  --secondary-foreground: 220 29% 21%;
+  --muted: 225 22% 94%;
+  --muted-foreground: 220 13% 48%;
+  --accent: 232 58% 58%;
+  --accent-foreground: 0 0% 100%;
+  --destructive: 7 63% 57%;
+  --input: 225 22% 83%;
+  --ring: 232 58% 52%;
+  --chart-1: 232 58% 58%;
+  --chart-2: 229 40% 26%;
+  --chart-3: 38 57% 53%;
+  --chart-4: 7 63% 57%;
+  --chart-5: 220 22% 55%;
+}
+
+.gainease-shell,
+.gainease-auth {
+  background: #f6f7fb !important;
+  color: #182235 !important;
+}
+
+.gainease-sidebar {
+  width: 260px !important;
+  background: #12182b !important;
+  box-shadow: 12px 0 40px rgba(18, 24, 43, 0.08);
+}
+
+.gainease-topbar {
+  background: rgba(246, 247, 251, 0.9) !important;
+  border-color: #e4e7ef !important;
+}
+
+.gainease-main {
+  max-width: 1360px !important;
+}
+
+.gainease-card {
+  border-color: #e3e6ef !important;
+  border-radius: 22px !important;
+  box-shadow: 0 10px 32px rgba(39, 48, 77, 0.06) !important;
+}
+
+.gainease-metric {
+  background: linear-gradient(145deg, #ffffff 0%, #fbfbfe 100%) !important;
+}
+
+.gainease-hero {
+  background: linear-gradient(135deg, #131a30 0%, #26385f 58%, #4e5fcf 100%) !important;
+  box-shadow: 0 18px 40px rgba(37, 49, 101, 0.2) !important;
+}
+
+.gainease-auth-visual {
+  background: linear-gradient(145deg, #12182b 0%, #26385f 62%, #4e5fcf 100%) !important;
+}
+
+.gainease-auth-panel > div {
+  max-width: 470px !important;
+  border: 1px solid #e5e8f0;
+  border-radius: 28px;
+  background: #ffffff;
+  padding: 34px;
+  box-shadow: 0 22px 60px rgba(39, 48, 77, 0.08);
+}
+
+.gainease-bottom-nav {
+  border-color: #e3e6ef !important;
+  box-shadow: 0 -8px 24px rgba(39, 48, 77, 0.06);
+}
+
+.gainease-chat-card {
+  box-shadow: 0 14px 38px rgba(39, 48, 77, 0.08) !important;
+}
+
+.gainease-chat-header {
+  background: linear-gradient(115deg, #12182b, #3d52c5) !important;
+}
+
+.auth-input {
+  border-radius: 14px;
+  border-color: #dfe3ec;
+  background: #fbfbfd;
+}
+
+.auth-input:focus {
+  border-color: #4e5fcf;
+  box-shadow: 0 0 0 4px rgba(78, 95, 207, 0.14);
+}
+
+[class*="bg-[#18245d]"],
+[class*="bg-[#1A2980]"],
+[class*="bg-[#1a285a]"] {
+  background-color: #27314b !important;
+}
+
+[class*="bg-[#293778]"] {
+  background-color: #3d52c5 !important;
+}
+
+[class*="bg-[#273e98]"],
+[class*="bg-[#263987]"],
+[class*="bg-[#20368b]"] {
+  background-color: #4e5fcf !important;
+}
+
+[class*="bg-[#078c84]"],
+[class*="bg-[#087b6e]"],
+[class*="bg-[#0daaa4]"],
+[class*="bg-[#26D0CE]"],
+[class*="bg-[#26d0ce]"] {
+  background-color: #3d52c5 !important;
+}
+
+[class*="bg-[#70f0e4]"],
+[class*="bg-[#65efe0]"] {
+  background-color: #8794ed !important;
+}
+
+[class*="bg-[#e1f8f3]"],
+[class*="bg-[#d9f5f1]"],
+[class*="bg-[#e8faf7]"],
+[class*="bg-[#e2f6f3]"],
+[class*="bg-[#dff7f3]"],
+[class*="bg-[#e4fbf6]"],
+[class*="bg-[#b8ece5]"] {
+  background-color: #eef1ff !important;
+}
+
+[class*="bg-[#f2f8f8]"],
+[class*="bg-[#f7fbfb]"],
+[class*="bg-[#f8fcfc]"],
+[class*="bg-[#fbfdfd]"],
+[class*="bg-[#f5f9f9]"],
+[class*="bg-[#eff7f7]"],
+[class*="bg-[#edf5f5]"],
+[class*="bg-[#edf3f3]"],
+[class*="bg-[#edf4f4]"],
+[class*="bg-[#e7eff1]"],
+[class*="bg-[#eef5f5]"],
+[class*="bg-[#f0f6f6]"],
+[class*="bg-[#e8f3f3]"],
+[class*="bg-[#e8f1f1]"] {
+  background-color: #f1f3f7 !important;
+}
+
+[class*="bg-[#e7edff]"],
+[class*="bg-[#e3eaff]"],
+[class*="bg-[#edf5ff]"],
+[class*="bg-[#f1f5ff]"],
+[class*="bg-[#f4f7ff]"] {
+  background-color: #eef1ff !important;
+}
+
+[class*="bg-[#fff3d7]"],
+[class*="bg-[#fff8e8]"] {
+  background-color: #fff5df !important;
+}
+
+[class*="bg-[#fff0ef]"],
+[class*="bg-[#fff6f5]"] {
+  background-color: #fff0ec !important;
+}
+
+[class*="text-[#18245d]"],
+[class*="text-[#1A2980]"],
+[class*="text-[#1a285a]"],
+[class*="text-[#1d2948]"],
+[class*="text-[#25305d]"] {
+  color: #182235 !important;
+}
+
+[class*="text-[#293778]"],
+[class*="text-[#273e98]"],
+[class*="text-[#263987]"],
+[class*="text-[#20368b]"],
+[class*="text-[#5265bd]"],
+[class*="text-[#078c84]"],
+[class*="text-[#087b6e]"],
+[class*="text-[#0daaa4]"],
+[class*="text-[#26D0CE]"],
+[class*="text-[#26d0ce]"] {
+  color: #3d52c5 !important;
+}
+
+[class*="text-[#70f0e4]"],
+[class*="text-[#65efe0]"] {
+  color: #a8b2ff !important;
+}
+
+[class*="text-[#33445f]"],
+[class*="text-[#374563]"],
+[class*="text-[#42536a]"],
+[class*="text-[#536779]"],
+[class*="text-[#526478]"],
+[class*="text-[#6e8191]"],
+[class*="text-[#71818e]"],
+[class*="text-[#71818f]"],
+[class*="text-[#73818e]"],
+[class*="text-[#7b8b95]"],
+[class*="text-[#819098]"],
+[class*="text-[#84909a]"],
+[class*="text-[#8a979f]"],
+[class*="text-[#93a0a7]"],
+[class*="text-[#9aa5aa]"],
+[class*="text-[#a0adb2]"],
+[class*="text-[#a6b2b5]"] {
+  color: #6b7689 !important;
+}
+
+[class*="text-[#adb7dd]"],
+[class*="text-[#aeb9dd]"],
+[class*="text-[#9ea9d0]"],
+[class*="text-[#c4d1f5]"],
+[class*="text-[#b8c7ef]"],
+[class*="text-[#c9d5f2]"] {
+  color: #bdc5e6 !important;
+}
+
+[class*="text-[#b67a17]"],
+[class*="text-[#a87217]"],
+[class*="text-[#946b20]"],
+[class*="text-[#93691e]"],
+[class*="text-[#8e671f]"],
+[class*="text-[#ffca67]"] {
+  color: #b4772f !important;
+}
+
+[class*="text-[#b4433e]"] {
+  color: #c0524b !important;
+}
+
+[class*="border-[#18245d]"],
+[class*="border-[#1A2980]"] {
+  border-color: #27314b !important;
+}
+
+[class*="border-[#078c84]"],
+[class*="border-[#26D0CE]"],
+[class*="border-[#26d0ce]"],
+[class*="border-[#9edfd8]"],
+[class*="border-[#b8deda]"],
+[class*="border-[#cfe8e5]"] {
+  border-color: #b9c3ef !important;
+}
+
+[class*="border-[#dbe9e8]"],
+[class*="border-[#dfeeed]"],
+[class*="border-[#dceceb]"],
+[class*="border-[#e0eeed]"],
+[class*="border-[#edf3f3]"],
+[class*="border-[#edf4f4]"],
+[class*="border-[#d8e9e7]"] {
+  border-color: #e1e5ee !important;
+}
+
+[class*="border-[#f0d8d6]"] {
+  border-color: #efc9c4 !important;
+}
+
+[class*="from-[#1A2980]"],
+[class*="from-[#1a2980]"],
+[class*="from-[#18245d]"] {
+  --tw-gradient-from: #12182b !important;
+  --tw-gradient-to: rgb(18 24 43 / 0) !important;
+}
+
+[class*="to-[#26D0CE]"],
+[class*="to-[#26d0ce]"] {
+  --tw-gradient-to: #4e5fcf !important;
+}
+
+[class*="to-[#273e98]"] {
+  --tw-gradient-to: #3d52c5 !important;
+}
+
+.live-dot {
+  background: #e97861 !important;
+  box-shadow: 0 0 0 4px rgba(233, 120, 97, 0.14);
+} */
